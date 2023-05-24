@@ -1,20 +1,26 @@
 version: '3'
 services:
-  server:
+  pm2:
     build:
       context: .
       dockerfile: ./Dockerfile
-    image: grpcweb/server
+    image: pm2
+    container_name: pm2
     ports:
       - "9090:9090"
-
+      - "8081:8081"
+    networks:
+      - dft
   envoy:
     build:
-      context: ./envoy
+      context: .
       dockerfile: ./envoy/Dockerfile
-    image: grpcweb/envoy
+    image: pm2/envoy
+    container_name: pm2_envoy
     ports:
-      - "8080:8080"
-    links:
-      - server
-  
+      - "6969:8080"
+    networks:
+      - dft
+networks:
+  dft:
+    driver: bridge

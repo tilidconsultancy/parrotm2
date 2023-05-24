@@ -11,10 +11,10 @@
         "database": "pm2"
     },
     "gpt": {
-        "token": "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"
+        "token": "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"
     },
     "kafka": {
-        "bootstrap-servers": "b-2.aws-prd-msk-cluster.pjbsqq.c3.kafka.sa-east-1.amazonaws.com:9092,b-1.aws-prd-msk-cluster.pjbsqq.c3.kafka.sa-east-1.amazonaws.com:9092,b-3.aws-prd-msk-cluster.pjbsqq.c3.kafka.sa-east-1.amazonaws.com:9092",
+        "bootstrap-servers": "env-dev.tilid.com.br:9092",
         "username": "",
         "password": "",
         "mechanism": "PLAIN",
@@ -22,13 +22,13 @@
             "topic": "parrot.conversation-event",
             "auto-offset-reset": "latest",
             "numpartitions": 1,
-            "replicationfactor": 3
+            "replicationfactor": 1
         },
         "messageEvent": {
             "topic": "parrot.message-event",
             "auto-offset-reset": "latest",
             "numpartitions": 1,
-            "replicationfactor": 3
+            "replicationfactor": 1
         }
     }
 }

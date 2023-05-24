@@ -23,8 +23,9 @@ type (
 )
 
 func NewGptClient(v *viper.Viper) ports.NlpClient {
+	tk := v.GetString("gpt.token")
 	return &GptClient{
-		client: openai.NewClient(v.GetString("gpt.token")),
+		client: openai.NewClient(tk),
 	}
 }
 

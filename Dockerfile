@@ -6,5 +6,6 @@ WORKDIR /app/cmd
 
 RUN go get
 RUN go build
-EXPOSE 80
+EXPOSE 8081
+EXPOSE 9090
 CMD [ "./cmd" ]
