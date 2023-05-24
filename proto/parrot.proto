@@ -1,0 +1,108 @@
+syntax = "proto3";
+option go_package = "internal/adapters/gRPC";
+package parrot.proto;
+
+service ConversationService {
+  rpc GetAllConversations(ConversationRequest)
+      returns (stream ConversationResponse);
+  rpc TakeOverConversation(TakeConversation)
+      returns (TakeConversation);
+}
+
+service MessageService {
+  rpc GetMessagesByConversationId(MessagesRequest)
+      returns (stream MessagesResponse);
+  rpc SendMessage(SendMessageRequest)
+      returns (Message);
+}
+
+message TakeConversation {
+  string ConversationId = 1;
+  string TenantUserId = 2;
+}
+
+message SendMessageRequest {
+  string ConversationId = 1;
+  string TenantUserId = 2;
+  string Content = 3;
+}
+
+message MessagesRequest {
+  string ConversationId = 1;
+  string IniDate = 2;
+  string EndDate = 3;
+}
+
+message MessagesResponse {
+  repeated Message Messages = 1;
+}
+
+message Message {
+  string Id         = 1;
+  string Role       = 2;
+  string Content    = 3;
+  string Status     = 4;
+  TennantUser TenantUser = 5;
+}
+
+message TennantUser {
+  string Id = 1;        
+  string TenantId = 2;  
+  string Name = 3;      
+  repeated Contact Contacts = 4;  
+  repeated Address Addresses = 5; 
+}
+
+message ConversationRequest {
+  int64 Skip = 1;
+  int64 Take = 2;
+  string TenantId = 3;
+  repeated KeyValue Filters = 4;
+}
+
+message KeyValue {
+  string Key = 1;
+  string Value = 2;
+}
+
+message ConversationResponse {
+  repeated Conversation Conversations = 1;
+  int64 Count = 2;
+}
+
+message Conversation {
+  string Id = 1;
+  Tenant Tenant = 2;
+  User User = 3;
+  string Status = 4;
+  string CreationDate = 5;
+  string LastUpdate = 6;
+}
+
+message Tenant {
+  string Id = 1;
+  string Name = 2; 
+  repeated Contact Contacts = 3;
+  repeated Address Addresses = 4;      
+}
+
+message Contact {
+  string Label = 1;
+  string Contact = 2;
+}
+
+message Address {
+  string Label    = 1;
+  string Zipcode  = 2;
+  string Street   = 3;
+  string Number   = 4;
+  string District = 5;
+  string City     = 6;
+  string State    = 7;
+}
+
+message User {
+  string Name = 1;         
+  string Phone = 2;        
+  repeated KeyValue Informations = 3; 
+}

@@ -1,0 +1,34 @@
+{
+    "grpcport": ":9090",
+    "ginport": ":8081",
+    "meta": {
+        "host": "https://graph.facebook.com",
+        "timeout": 10,
+        "retries": 5
+    },
+    "mongodb": {
+        "connectionString": "mongodb+srv://matraca:dDrzrx6r9WcHHGql@clusterdev.73cfdry.mongodb.net",
+        "database": "pm2"
+    },
+    "gpt": {
+        "token": "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"
+    },
+    "kafka": {
+        "bootstrap-servers": "b-2.aws-prd-msk-cluster.pjbsqq.c3.kafka.sa-east-1.amazonaws.com:9092,b-1.aws-prd-msk-cluster.pjbsqq.c3.kafka.sa-east-1.amazonaws.com:9092,b-3.aws-prd-msk-cluster.pjbsqq.c3.kafka.sa-east-1.amazonaws.com:9092",
+        "username": "",
+        "password": "",
+        "mechanism": "PLAIN",
+        "conversationEvent": {
+            "topic": "parrot.conversation-event",
+            "auto-offset-reset": "latest",
+            "numpartitions": 1,
+            "replicationfactor": 3
+        },
+        "messageEvent": {
+            "topic": "parrot.message-event",
+            "auto-offset-reset": "latest",
+            "numpartitions": 1,
+            "replicationfactor": 3
+        }
+    }
+}
