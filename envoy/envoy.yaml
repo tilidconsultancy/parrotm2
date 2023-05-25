@@ -9,9 +9,7 @@ static_resources:
       address:
         socket_address: { address: 0.0.0.0, port_value: 8080 }
       filter_chains:
-      - filter_chain_match:
-          server_names: ["*.tilid.com.br"]
-        filters:
+      - filters:
         - name: envoy.filters.network.http_connection_manager
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
