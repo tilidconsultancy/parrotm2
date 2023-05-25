@@ -11,7 +11,7 @@
         "database": "pm2"
     },
     "gpt": {
-        "token": "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",
+        "token": "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",
         "org": "org-u6eLnaNoOWYKrb8riZgCu6WX"
     },
     "kafka": {
