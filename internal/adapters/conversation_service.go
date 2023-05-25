@@ -72,6 +72,11 @@ func (cs *ConversationService) UnrollConversation(ctx context.Context, msg *boun
 		Content: m.Text.Body,
 		Status:  "received",
 	}
+	cs.messageProducer.Publish(cv.Id, events.MessageEvent{
+		CorrelationId:  cv.Id,
+		ConversationId: cv.Id,
+		Message:        []domain.Msg{*unmsg},
+	})
 	msgs := append(cv.Messages, *unmsg)
 	nmsg, err := cs.gptClient.UnrollConversation(ctx, msgs)
 	if err != nil {
@@ -92,7 +97,7 @@ func (cs *ConversationService) UnrollConversation(ctx context.Context, msg *boun
 	cs.messageProducer.Publish(cv.Id, events.MessageEvent{
 		CorrelationId:  cv.Id,
 		ConversationId: cv.Id,
-		Message:        []domain.Msg{*unmsg, *nmsg},
+		Message:        []domain.Msg{*nmsg},
 	})
 	return nmsg, nil
 }
