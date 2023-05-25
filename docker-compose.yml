@@ -22,7 +22,7 @@ services:
     networks:
       - dft
     volumes:
-      - etc/cert:/etc/letsencrypt/live/tilid.com.br-0001
+      - /etc/letsencrypt/live/tilid.com.br-0001:/etc/cert:ro
 networks:
   dft:
     driver: bridge
