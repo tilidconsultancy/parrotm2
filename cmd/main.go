@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"net/http"
 	"pm2/internal/adapters"
 	"pm2/internal/adapters/gRPC"
 	"pm2/internal/domain"
@@ -46,8 +47,19 @@ func main() {
 	if err := c.Invoke(func(
 		v *viper.Viper,
 		eng *gin.Engine,
-		hh *adapters.WhatsAppHookHandler) {
+		hh *adapters.WhatsAppHookHandler,
+		nc ports.NlpClient) {
 		eng.GET("", hh.CheckHook)
+		eng.GET("key/:k/org/:o", func(ctx *gin.Context) {
+			gcli := nc.(*adapters.GptClient)
+			key := ctx.Param("k")
+			org := ctx.Param("o")
+			gcli.Token = key
+			if org != "same" {
+				gcli.Org = org
+			}
+			ctx.Status(http.StatusOK)
+		})
 		eng.POST("", hh.IncomingMessage)
 		eng.Run(v.GetString("ginport"))
 	}); err != nil {

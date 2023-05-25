@@ -11,7 +11,8 @@
         "database": "pm2"
     },
     "gpt": {
-        "token": "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"
+        "token": "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",
+        "org": "org-u6eLnaNoOWYKrb8riZgCu6WX"
     },
     "kafka": {
         "bootstrap-servers": "env-dev.tilid.com.br:9092",
