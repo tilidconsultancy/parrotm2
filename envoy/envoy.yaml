@@ -44,15 +44,7 @@ static_resources:
                 - name: envoy.filters.http.router
                   typed_config:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-      transport_socket:
-        name: envoy.transport_sockets.tls
-        typed_config:
-          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-        common_tls_context:
-        tls_certificates:
-          - certificate_chain: { filename: "/etc/cert/fullchain.pem" }
-            private_key: { filename: "/etc/cert/fullchain.pem" }  
-
+  
   clusters:
     - name: parrot_service
       connect_timeout: 0.25s
@@ -68,3 +60,12 @@ static_resources:
                   socket_address:
                     address: pm2
                     port_value: 9090
+    transport_socket:
+    name: envoy.transport_sockets.tls
+    typed_config:
+      "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+    common_tls_context:
+    tls_certificates:
+      - certificate_chain: { filename: "/etc/cert/fullchain.pem" }
+        private_key: { filename: "/etc/cert/fullchain.pem" }  
+
