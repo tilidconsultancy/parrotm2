@@ -45,6 +45,7 @@ func (gc *GptClient) UnrollConversation(ctx context.Context, msgs []domain.Msg) 
 	txt := res.Choices[0].Text
 	txt = strings.ReplaceAll(txt, p, "")
 	txt = strings.ReplaceAll(txt, string(domain.APPLICATION), "")
+	txt = strings.ReplaceAll(txt, string(domain.USER), "")
 	txt = strings.ReplaceAll(txt, "#", "")
 	return &domain.Msg{
 		Role:    domain.APPLICATION,
