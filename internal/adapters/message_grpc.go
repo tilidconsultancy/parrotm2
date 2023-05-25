@@ -2,7 +2,9 @@ package adapters
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"log"
 	"pm2/internal/adapters/gRPC"
 	"pm2/internal/domain"
 	"pm2/internal/ports"
@@ -44,6 +46,8 @@ func (ms *MessageServer) GetMessagesByConversationId(
 	rw gRPC.MessageService_GetMessagesByConversationIdServer) (err error) {
 	defer recoverMessage(&err)
 	ctx := rw.Context()
+	j, _ := json.Marshal(rq)
+	log.Println(string(j))
 	cv := ms.conversationRepository.GetFirst(ctx, ports.GetConversationById(uuid.MustParse(rq.ConversationId)))
 	if cv == nil {
 		return errors.New(domain.CONVERSATION_NOT_FOUND)
@@ -61,12 +65,16 @@ func (ms *MessageServer) GetMessagesByConversationId(
 		msg := i.([]domain.Msg)
 		msgr := buildMessageResponse(msg...)
 		rw.Send(msgr)
+		j, _ = json.Marshal(msgr)
+		log.Println(string(j))
 		return nil
 	})
 	defer ms.sessionManager.RemoveSessions(func(ss *ports.Session) bool {
 		return ss.Id == s.Id
 	})
 	rw.Send(mr)
+	j, _ = json.Marshal(mr)
+	log.Println(string(j))
 	<-ctx.Done()
 	return nil
 }

@@ -2,6 +2,8 @@ package adapters
 
 import (
 	"context"
+	"encoding/json"
+	"log"
 	"pm2/internal/adapters/gRPC"
 	"pm2/internal/domain"
 	"pm2/internal/ports"
@@ -29,6 +31,8 @@ func (c *ConversationServer) GetAllConversations(
 	rq *gRPC.ConversationRequest,
 	rw gRPC.ConversationService_GetAllConversationsServer) error {
 	ctx := rw.Context()
+	j, _ := json.Marshal(rq)
+	log.Println(string(j))
 	id, err := uuid.Parse(rq.TenantId)
 	if err != nil {
 		return err
@@ -42,6 +46,8 @@ func (c *ConversationServer) GetAllConversations(
 	cvs := c.conversationRepository.GetAllSkipTake(ctx, filter, rq.Skip, rq.Take)
 	cr := buildConversationResponse(cvs)
 	rw.Send(cr)
+	j, _ = json.Marshal(cr)
+	log.Println(string(j))
 	s := &ports.Session{
 		Id:  uuid.New(),
 		Key: rq.TenantId,
@@ -56,10 +62,13 @@ func (c *ConversationServer) GetAllConversations(
 			}
 		}()
 		cv := i.(*domain.Conversation)
-		rw.Send(&gRPC.ConversationResponse{
+		cr := &gRPC.ConversationResponse{
 			Conversations: buildConversations(*cv),
 			Count:         1,
-		})
+		}
+		rw.Send(cr)
+		j, _ = json.Marshal(cr)
+		log.Println(string(j))
 		return nil
 	})
 	defer c.sessionManager.RemoveSessions(func(ss *ports.Session) bool {
