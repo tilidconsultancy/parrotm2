@@ -75,7 +75,11 @@ func (cs *ConversationService) UnrollConversation(ctx context.Context, msg *boun
 	msgs := append(cv.Messages, *unmsg)
 	nmsg, err := cs.gptClient.UnrollConversation(ctx, msgs)
 	if err != nil {
-		return nil, err
+		nmsg = &domain.Msg{
+			Role:    domain.APPLICATION,
+			Content: err.Error(),
+			Status:  "error",
+		}
 	}
 	nmsg.Id, err = cs.metaClient.SendTextMessage(ctx, &cv.Tenant, m.From, nmsg.Content)
 	if err != nil {
