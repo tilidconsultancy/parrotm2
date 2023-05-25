@@ -18,14 +18,14 @@ const (
 
 type (
 	GptClient struct {
-		token string
+		Token string
 	}
 )
 
 func NewGptClient(v *viper.Viper) ports.NlpClient {
 	tk := v.GetString("gpt.token")
 	return &GptClient{
-		token: tk,
+		Token: tk,
 	}
 }
 
@@ -37,7 +37,7 @@ func (gc *GptClient) UnrollConversation(ctx context.Context, msgs []domain.Msg) 
 		Temperature: 1,
 		MaxTokens:   512,
 	}
-	cli := openai.NewClient(gc.token)
+	cli := openai.NewClient(gc.Token)
 	res, err := cli.CreateCompletion(ctx, req)
 	if err != nil {
 		return nil, err

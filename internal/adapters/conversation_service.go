@@ -3,6 +3,7 @@ package adapters
 import (
 	"context"
 	"errors"
+	"log"
 	"pm2/internal/domain"
 	"pm2/internal/domain/events"
 	"pm2/internal/ports"
@@ -85,6 +86,8 @@ func (cs *ConversationService) UnrollConversation(ctx context.Context, msg *boun
 			Content: err.Error(),
 			Status:  "error",
 		}
+		gptc := cs.gptClient.(*GptClient)
+		log.Println(gptc.Token)
 	}
 	nmsg.Id, err = cs.metaClient.SendTextMessage(ctx, &cv.Tenant, m.From, nmsg.Content)
 	if err != nil {
