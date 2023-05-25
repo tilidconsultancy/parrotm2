@@ -21,8 +21,6 @@ services:
       - "6969:8080"
     networks:
       - dft
-    volumes:
-      - /etc/letsencrypt/live/tilid.com.br-0001:/etc/cert:ro
 networks:
   dft:
     driver: bridge
