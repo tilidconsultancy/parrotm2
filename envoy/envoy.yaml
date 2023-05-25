@@ -50,8 +50,8 @@ static_resources:
           "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
         common_tls_context:
         tls_certificates:
-          - certificate_chain: { filename: "/etc/envoy/fullchain.pem" }
-            private_key: { filename: "/etc/envoy/fullchain.pem" }  
+          - certificate_chain: { filename: "/etc/cert/fullchain.pem" }
+            private_key: { filename: "/etc/cert/fullchain.pem" }  
 
   clusters:
     - name: parrot_service
