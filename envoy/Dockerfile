@@ -15,6 +15,7 @@
 FROM envoyproxy/envoy:v1.22.0
 
 COPY ./envoy/envoy.yaml /etc/envoy
+COPY /etc/letsencrypt/live/tilid.com.br-0001/fullchain.pem /etc/envoy
 
 ENTRYPOINT [ "/usr/local/bin/envoy" ]
 CMD [ "-c /etc/envoy/envoy.yaml", "-l trace", "--log-path /tmp/envoy_info.log" ]
