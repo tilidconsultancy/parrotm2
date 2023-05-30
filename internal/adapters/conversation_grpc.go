@@ -49,7 +49,7 @@ func (c *ConversationServer) TakeOverConversation(rq *gRPC.TakeConversation, rw 
 		return err
 	}
 	cv := c.conversationRepository.GetFirst(ctx, ports.GetById(cvid))
-	if cv == nil {
+	if cv == nil || cv.TenantUser != nil {
 		return errors.New(domain.CONVERSATION_NOT_FOUND)
 	}
 	cv.TenantUser = tuser
