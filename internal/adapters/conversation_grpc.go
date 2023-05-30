@@ -8,6 +8,7 @@ import (
 	"pm2/internal/adapters/gRPC"
 	"pm2/internal/domain"
 	"pm2/internal/ports"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -53,10 +54,17 @@ func (c *ConversationServer) TakeOverConversation(rq *gRPC.TakeConversation, rw 
 	}
 	cv.TenantUser = tuser
 	c.conversationRepository.Replace(ctx, ports.GetById(cvid), cv)
-	<-ctx.Done()
-	cv.TenantUser = nil
-	c.conversationRepository.Replace(context.Background(), ports.GetById(cvid), cv)
-	return nil
+	for {
+		select {
+		case <-ctx.Done():
+			cv.TenantUser = nil
+			c.conversationRepository.Replace(context.Background(), ports.GetById(cvid), cv)
+			return nil
+		default:
+			rw.Send(rq)
+			time.Sleep(time.Second * 2)
+		}
+	}
 }
 
 func (c *ConversationServer) GetAllConversations(
