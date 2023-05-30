@@ -9,7 +9,7 @@ FROM alpine:latest
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN apk add --no-cache bash
 COPY --from=build /app/cmd/cmd /usr/local/bin/cmd
-COPY --from=build /app/cmd/configs/ /configs/
+COPY --from=build /app/configs/ /configs/
 EXPOSE 8081
 EXPOSE 9090
 ENTRYPOINT [ "cmd" ]
