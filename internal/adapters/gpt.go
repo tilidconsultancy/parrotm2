@@ -52,9 +52,9 @@ func (gc *GptClient) UnrollConversation(ctx context.Context, tenantId uuid.UUID,
 	txt = strings.ReplaceAll(txt, p, "")
 	txt = strings.ReplaceAll(txt, string(domain.APPLICATION), "")
 	txt = strings.ReplaceAll(txt, string(domain.USER), "")
-	return &domain.Msg{
-		Role:    domain.APPLICATION,
-		Content: txt,
-		Status:  "generated",
-	}, nil
+	return domain.NewMessage("",
+		domain.APPLICATION,
+		txt,
+		domain.GENERATED,
+		nil), nil
 }

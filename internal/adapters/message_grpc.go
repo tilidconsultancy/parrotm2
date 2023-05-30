@@ -60,6 +60,8 @@ func (ms *MessageServer) SendMessage(ctx context.Context, rq *gRPC.SendMessageRe
 	if err != nil {
 		return nil, err
 	}
+	cv.Messages = append(cv.Messages, *msg)
+	ms.conversationRepository.Replace(ctx, ports.GetById(cv.Id), cv)
 	return buildMessages(*msg)[0], nil
 }
 
@@ -116,6 +118,7 @@ func buildMessages(msgs ...domain.Msg) []*gRPC.Message {
 			Content:    m.Content,
 			Status:     string(m.Status),
 			TenantUser: buildTenantUser(m.TenantUser),
+			CreatedAt:  m.CreatedAt.String(),
 		})
 	}
 	return r

@@ -127,7 +127,7 @@ func (cs *ConversationService) UnrollConversation(ctx context.Context, msg *boun
 		msgs = append(msgs, *nmsg)
 	}
 	cv.Messages = msgs
-	cv.LastUpdate = time.Now()
+	cv.UpdatedAt = time.Now()
 	cs.conversationRepository.Replace(ctx, ports.GetById(cv.Id), cv)
 	return nmsg, nil
 }

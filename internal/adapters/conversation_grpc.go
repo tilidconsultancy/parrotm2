@@ -129,12 +129,12 @@ func buildConversations(cvs ...domain.Conversation) []*gRPC.Conversation {
 	r := []*gRPC.Conversation{}
 	for _, c := range cvs {
 		r = append(r, &gRPC.Conversation{
-			Id:           c.Id.String(),
-			Tenant:       buildTenant(&c.Tenant),
-			User:         buildUser(&c.User),
-			Status:       string(c.Status),
-			CreationDate: c.CreationDate.String(),
-			LastUpdate:   c.LastUpdate.String(),
+			Id:        c.Id.String(),
+			Tenant:    buildTenant(&c.Tenant),
+			User:      buildUser(&c.User),
+			Status:    string(c.Status),
+			CreatedAt: c.CreatedAt.String(),
+			UpdatedAt: c.UpdatedAt.String(),
 		})
 	}
 	return r

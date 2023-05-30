@@ -43,6 +43,7 @@ message Message {
   string Content    = 3;
   string Status     = 4;
   TennantUser TenantUser = 5;
+  string CreatedAt = 6;
 }
 
 message TennantUser {
@@ -75,8 +76,8 @@ message Conversation {
   Tenant Tenant = 2;
   User User = 3;
   string Status = 4;
-  string CreationDate = 5;
-  string LastUpdate = 6;
+  string CreatedAt = 5;
+  string UpdatedAt = 6;
 }
 
 message Tenant {

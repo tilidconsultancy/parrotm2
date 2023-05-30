@@ -7,17 +7,17 @@ import (
 )
 
 type (
+	AccountSettings struct {
+		PhoneId  string
+		Token    string
+		NlpToken string
+	}
 	Tenant struct {
 		Id              uuid.UUID
 		Name            string
 		Contacts        []Contact
 		Addresses       []Address
 		AccountSettings AccountSettings
-	}
-	AccountSettings struct {
-		PhoneId  string
-		Token    string
-		NlpToken string
 	}
 	TenantUser struct {
 		Id        uuid.UUID

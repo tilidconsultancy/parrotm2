@@ -27,14 +27,14 @@ type (
 	ConversationStatus string
 	MsgRole            string
 	Conversation       struct {
-		Id           uuid.UUID
-		Tenant       Tenant
-		TenantUser   *TenantUser
-		User         User
-		Messages     []Msg
-		Status       ConversationStatus
-		CreationDate time.Time
-		LastUpdate   time.Time
+		Id         uuid.UUID
+		Tenant     Tenant
+		TenantUser *TenantUser
+		User       User
+		Messages   []Msg
+		Status     ConversationStatus
+		CreatedAt  time.Time
+		UpdatedAt  time.Time
 	}
 	MsgStatus string
 	Msg       struct {
@@ -68,8 +68,8 @@ func NewConversation(t *Tenant,
 			Name:  p,
 			Phone: wid,
 		},
-		Status:       IN_PROGRESS,
-		CreationDate: time.Now(),
+		Status:    IN_PROGRESS,
+		CreatedAt: time.Now(),
 	}
 }
 
