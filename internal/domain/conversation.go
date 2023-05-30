@@ -16,6 +16,11 @@ const (
 	USER        MsgRole = "[USER]"
 	SYSTEM      MsgRole = "[SYSTEM]"
 	APPLICATION MsgRole = "[APPLICATION]"
+
+	ERROR     MsgStatus = "error"
+	SENT      MsgStatus = "sent"
+	GENERATED MsgStatus = "generated"
+	RECEIVED  MsgStatus = "received"
 )
 
 type (
@@ -31,14 +36,27 @@ type (
 		CreationDate time.Time
 		LastUpdate   time.Time
 	}
-	Msg struct {
+	MsgStatus string
+	Msg       struct {
 		Id         string
 		Role       MsgRole
 		Content    string
-		Status     string
+		Status     MsgStatus
 		TenantUser *TenantUser
+		CreatedAt  time.Time
 	}
 )
+
+func NewMessage(id string, role MsgRole, c string, st MsgStatus, tu *TenantUser) *Msg {
+	return &Msg{
+		Id:         id,
+		Role:       role,
+		Content:    c,
+		Status:     st,
+		TenantUser: tu,
+		CreatedAt:  time.Now(),
+	}
+}
 
 func NewConversation(t *Tenant,
 	p string,

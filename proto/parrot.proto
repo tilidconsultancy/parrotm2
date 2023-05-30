@@ -6,7 +6,7 @@ service ConversationService {
   rpc GetAllConversations(ConversationRequest)
       returns (stream ConversationResponse);
   rpc TakeOverConversation(TakeConversation)
-      returns (TakeConversation);
+      returns (stream TakeConversation);
 }
 
 service MessageService {

@@ -3,7 +3,6 @@ package adapters
 import (
 	"context"
 	"errors"
-	"log"
 	"pm2/internal/domain"
 	"pm2/internal/domain/events"
 	"pm2/internal/ports"
@@ -41,6 +40,50 @@ func NewConversationService(gptClient ports.NlpClient,
 	}
 }
 
+func (cs *ConversationService) SendApplicationMessage(ctx context.Context, cv *domain.Conversation, content string) (*domain.Msg, error) {
+	mid, err := cs.metaClient.SendTextMessage(ctx, &cv.Tenant, cv.User.Phone, content)
+	if err != nil {
+		return nil, err
+	}
+	msg := domain.NewMessage(
+		mid,
+		domain.APPLICATION,
+		content,
+		domain.SENT,
+		cv.TenantUser)
+	if err := cs.messageProducer.Publish(cv.Id, events.NewMessageEvent(cv.Id,
+		cv.Id,
+		msg)); err != nil {
+		return nil, err
+	}
+	return msg, nil
+}
+
+func (cs *ConversationService) genconversation(ctx context.Context,
+	cv *domain.Conversation,
+	m *boundaries.Message,
+	msgs []domain.Msg) (*domain.Msg, error) {
+	nmsg, err := cs.gptClient.UnrollConversation(ctx, cv.Tenant.Id, msgs)
+	if err != nil {
+		nmsg = domain.NewMessage(
+			uuid.NewString(),
+			domain.APPLICATION,
+			err.Error(),
+			domain.ERROR,
+			nil)
+	}
+	nmsg.Id, err = cs.metaClient.SendTextMessage(ctx, &cv.Tenant, m.From, nmsg.Content)
+	if err != nil {
+		return nil, err
+	}
+	if err := cs.messageProducer.Publish(cv.Id, events.NewMessageEvent(cv.Id,
+		cv.Id,
+		nmsg)); err != nil {
+		return nil, err
+	}
+	return nmsg, nil
+}
+
 func (cs *ConversationService) UnrollConversation(ctx context.Context, msg *boundaries.IncomingMessageInput) (*domain.Msg, error) {
 	c := msg.Entry[0].Changes[0]
 	m := c.Value.Messages[0]
@@ -53,10 +96,7 @@ func (cs *ConversationService) UnrollConversation(ctx context.Context, msg *boun
 		ct := c.Value.Contacts[0]
 		cv = domain.NewConversation(t, ct.Profile.Name, ct.WaId)
 		cid := uuid.New()
-		if err := cs.conversationProducer.Publish(cid, events.ConversationEvent{
-			CorrelationId: cid,
-			Conversation:  cv,
-		}); err != nil {
+		if err := cs.conversationProducer.Publish(cid, events.NewConversationEvent(cid, cv)); err != nil {
 			return nil, err
 		}
 	}
@@ -67,40 +107,27 @@ func (cs *ConversationService) UnrollConversation(ctx context.Context, msg *boun
 		return &cv.Messages[fmi+1], nil
 	}
 	go cs.metaClient.ReadMessage(ctx, &cv.Tenant, m.Id)
-	unmsg := &domain.Msg{
-		Id:      m.Id,
-		Role:    domain.USER,
-		Content: m.Text.Body,
-		Status:  "received",
-	}
-	cs.messageProducer.Publish(cv.Id, events.MessageEvent{
-		CorrelationId:  cv.Id,
-		ConversationId: cv.Id,
-		Message:        []domain.Msg{*unmsg},
-	})
-	msgs := append(cv.Messages, *unmsg)
-	nmsg, err := cs.gptClient.UnrollConversation(ctx, msgs)
-	if err != nil {
-		nmsg = &domain.Msg{
-			Role:    domain.APPLICATION,
-			Content: err.Error(),
-			Status:  "error",
-		}
-		gptc := cs.gptClient.(*GptClient)
-		log.Println(gptc.Token)
-	}
-	nmsg.Id, err = cs.metaClient.SendTextMessage(ctx, &cv.Tenant, m.From, nmsg.Content)
-	if err != nil {
+	unmsg := domain.NewMessage(
+		m.Id,
+		domain.USER,
+		m.Text.Body,
+		domain.RECEIVED,
+		nil)
+	if err := cs.messageProducer.Publish(cv.Id, events.NewMessageEvent(cv.Id,
+		cv.Id, unmsg)); err != nil {
 		return nil, err
 	}
-	msgs = append(msgs, *nmsg)
+	msgs := append(cv.Messages, *unmsg)
+	nmsg := unmsg
+	if cv.TenantUser == nil {
+		nmsg, err = cs.genconversation(ctx, cv, &m, msgs)
+		if err != nil {
+			return nil, err
+		}
+		msgs = append(msgs, *nmsg)
+	}
 	cv.Messages = msgs
 	cv.LastUpdate = time.Now()
-	cs.conversationRepository.Replace(ctx, ports.GetConversationById(cv.Id), cv)
-	cs.messageProducer.Publish(cv.Id, events.MessageEvent{
-		CorrelationId:  cv.Id,
-		ConversationId: cv.Id,
-		Message:        []domain.Msg{*nmsg},
-	})
+	cs.conversationRepository.Replace(ctx, ports.GetById(cv.Id), cv)
 	return nmsg, nil
 }

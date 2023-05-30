@@ -2,7 +2,6 @@ package main
 
 import (
 	"net"
-	"net/http"
 	"pm2/internal/adapters"
 	"pm2/internal/adapters/gRPC"
 	"pm2/internal/domain"
@@ -18,6 +17,7 @@ import (
 
 func main() {
 	c := buildContainer()
+
 	if err := c.Invoke(func(v *viper.Viper,
 		cs gRPC.ConversationServiceServer,
 		ms gRPC.MessageServiceServer) {
@@ -47,19 +47,8 @@ func main() {
 	if err := c.Invoke(func(
 		v *viper.Viper,
 		eng *gin.Engine,
-		hh *adapters.WhatsAppHookHandler,
-		nc ports.NlpClient) {
+		hh *adapters.WhatsAppHookHandler) {
 		eng.GET("", hh.CheckHook)
-		eng.GET("key/:k/org/:o", func(ctx *gin.Context) {
-			gcli := nc.(*adapters.GptClient)
-			key := ctx.Param("k")
-			org := ctx.Param("o")
-			gcli.Token = key
-			if org != "same" {
-				gcli.Org = org
-			}
-			ctx.Status(http.StatusOK)
-		})
 		eng.POST("", hh.IncomingMessage)
 		eng.Run(v.GetString("ginport"))
 	}); err != nil {
@@ -76,6 +65,7 @@ func buildContainer() *dig.Container {
 	c.Provide(adapters.NewMongoDatabase)
 	c.Provide(adapters.NewMongoDbRepository[domain.Conversation])
 	c.Provide(adapters.NewMongoDbRepository[domain.Tenant])
+	c.Provide(adapters.NewMongoDbRepository[domain.TenantUser])
 	c.Provide(adapters.NewGptClient)
 	c.Provide(adapters.NewMetaSettings)
 	c.Provide(adapters.NewMetaHttpClient)

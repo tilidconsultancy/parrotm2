@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+            "label": "protoc",
+            "command": "protoc",
+            "type": "process",
+            "args": [
+                "--go_out=.",
+                "--go-grpc_out=.",
+                "./proto/parrot.proto"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+	]
+}

@@ -35,7 +35,7 @@ func NewConversationEventProducer(v *viper.Viper,
 }
 
 func ConversationEventHandler(sm ports.SessionManagerUseCase) ports.ConsumerFunc[events.ConversationEvent] {
-	return func(ctx context.Context, cc1 ports.ConsumerContext, cc2 events.ConversationEvent) {
+	return func(ctx context.Context, _ ports.ConsumerContext, cc2 events.ConversationEvent) {
 		log.Printf("[CONVERSATION-EVENT-CONSUMER] - consume new conversation event: %s", cc2.Conversation.Id)
 		if err := sm.InvokeSessionEvents(func(s *ports.Session) bool {
 			return s.Key == cc2.Conversation.Tenant.Id.String()

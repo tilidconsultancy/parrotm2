@@ -14,6 +14,23 @@ type (
 	MessageEvent struct {
 		CorrelationId  uuid.UUID
 		ConversationId uuid.UUID
-		Message        []domain.Msg
+		Message        *domain.Msg
 	}
 )
+
+func NewConversationEvent(cid uuid.UUID, cv *domain.Conversation) ConversationEvent {
+	return ConversationEvent{
+		CorrelationId: cid,
+		Conversation:  cv,
+	}
+}
+
+func NewMessageEvent(cid uuid.UUID,
+	cvid uuid.UUID,
+	msg *domain.Msg) MessageEvent {
+	return MessageEvent{
+		CorrelationId:  cid,
+		ConversationId: cvid,
+		Message:        msg,
+	}
+}

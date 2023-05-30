@@ -17,14 +17,17 @@ type (
 		gRPC.UnimplementedMessageServiceServer
 		conversationRepository ports.Repository[domain.Conversation]
 		sessionManager         ports.SessionManagerUseCase
+		conversationUseCase    ports.ConversationUseCase
 	}
 )
 
 func NewMessageServer(conversationRepository ports.Repository[domain.Conversation],
-	sessionManager ports.SessionManagerUseCase) gRPC.MessageServiceServer {
+	sessionManager ports.SessionManagerUseCase,
+	conversationUseCase ports.ConversationUseCase) gRPC.MessageServiceServer {
 	return &MessageServer{
 		conversationRepository: conversationRepository,
 		sessionManager:         sessionManager,
+		conversationUseCase:    conversationUseCase,
 	}
 }
 
@@ -41,6 +44,25 @@ func recoverMessage(err *error) {
 	}
 }
 
+func (ms *MessageServer) SendMessage(ctx context.Context, rq *gRPC.SendMessageRequest) (*gRPC.Message, error) {
+	cvid, err := uuid.Parse(rq.ConversationId)
+	if err != nil {
+		return nil, err
+	}
+	cv := ms.conversationRepository.GetFirst(ctx, ports.GetById(cvid))
+	if cv == nil {
+		return nil, errors.New(domain.CONVERSATION_NOT_FOUND)
+	}
+	if cv.TenantUser == nil {
+		return nil, errors.New(domain.TENANT_USER_NOT_FOUND)
+	}
+	msg, err := ms.conversationUseCase.SendApplicationMessage(ctx, cv, rq.Content)
+	if err != nil {
+		return nil, err
+	}
+	return buildMessages(*msg)[0], nil
+}
+
 func (ms *MessageServer) GetMessagesByConversationId(
 	rq *gRPC.MessagesRequest,
 	rw gRPC.MessageService_GetMessagesByConversationIdServer) (err error) {
@@ -48,7 +70,7 @@ func (ms *MessageServer) GetMessagesByConversationId(
 	ctx := rw.Context()
 	j, _ := json.Marshal(rq)
 	log.Println(string(j))
-	cv := ms.conversationRepository.GetFirst(ctx, ports.GetConversationById(uuid.MustParse(rq.ConversationId)))
+	cv := ms.conversationRepository.GetFirst(ctx, ports.GetById(uuid.MustParse(rq.ConversationId)))
 	if cv == nil {
 		return errors.New(domain.CONVERSATION_NOT_FOUND)
 	}
@@ -60,10 +82,10 @@ func (ms *MessageServer) GetMessagesByConversationId(
 	ms.sessionManager.CreateSession(s)
 	ms.sessionManager.AppendSessionEvent(func(ss *ports.Session) bool {
 		return s.Id == ss.Id
-	}, func(ctx context.Context, i interface{}) (err error) {
+	}, func(_ context.Context, i interface{}) (err error) {
 		defer recoverMessage(&err)
-		msg := i.([]domain.Msg)
-		msgr := buildMessageResponse(msg...)
+		msg := i.(*domain.Msg)
+		msgr := buildMessageResponse(*msg)
 		rw.Send(msgr)
 		j, _ = json.Marshal(msgr)
 		log.Println(string(j))
@@ -81,18 +103,18 @@ func (ms *MessageServer) GetMessagesByConversationId(
 
 func buildMessageResponse(msgs ...domain.Msg) *gRPC.MessagesResponse {
 	return &gRPC.MessagesResponse{
-		Messages: buildMessages(msgs),
+		Messages: buildMessages(msgs...),
 	}
 }
 
-func buildMessages(msgs []domain.Msg) []*gRPC.Message {
+func buildMessages(msgs ...domain.Msg) []*gRPC.Message {
 	r := []*gRPC.Message{}
 	for _, m := range msgs {
 		r = append(r, &gRPC.Message{
 			Id:         m.Id,
 			Role:       string(m.Role),
 			Content:    m.Content,
-			Status:     m.Status,
+			Status:     string(m.Status),
 			TenantUser: buildTenantUser(m.TenantUser),
 		})
 	}

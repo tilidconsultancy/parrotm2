@@ -2,7 +2,7 @@ package ports
 
 import "github.com/google/uuid"
 
-func GetConversationById(id uuid.UUID) map[string]interface{} {
+func GetById(id uuid.UUID) map[string]interface{} {
 	return map[string]interface{}{
 		"id": id,
 	}

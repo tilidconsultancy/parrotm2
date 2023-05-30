@@ -44,19 +44,20 @@ type (
 						} `json:"profile"`
 						WaId string `json:"wa_id"`
 					} `json:"contacts"`
-					Messages []struct {
-						From      string `json:"from"`
-						Id        string `json:"id"`
-						Timestamp string `json:"timestamp"`
-						Text      struct {
-							Body string `json:"body"`
-						} `json:"text"`
-						Type string `json:"type"`
-					} `json:"messages"`
+					Messages []Message `json:"messages"`
 				} `json:"value"`
 				Field string `json:"field"`
 			} `json:"changes"`
 		} `json:"entry"`
+	}
+	Message struct {
+		From      string `json:"from"`
+		Id        string `json:"id"`
+		Timestamp string `json:"timestamp"`
+		Text      struct {
+			Body string `json:"body"`
+		} `json:"text"`
+		Type string `json:"type"`
 	}
 )
 

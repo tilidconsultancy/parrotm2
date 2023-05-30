@@ -2,12 +2,13 @@ package adapters
 
 import (
 	"context"
+	"errors"
 	"pm2/internal/domain"
 	"pm2/internal/ports"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -20,21 +21,17 @@ const (
 
 type (
 	GptClient struct {
-		Token string
-		Org   string
+		tenantRepository ports.Repository[domain.Tenant]
 	}
 )
 
-func NewGptClient(v *viper.Viper) ports.NlpClient {
-	tk := v.GetString("gpt.token")
-	org := v.GetString("gpt.org")
+func NewGptClient(tenantRepository ports.Repository[domain.Tenant]) ports.NlpClient {
 	return &GptClient{
-		Token: tk,
-		Org:   org,
+		tenantRepository: tenantRepository,
 	}
 }
 
-func (gc *GptClient) UnrollConversation(ctx context.Context, msgs []domain.Msg) (*domain.Msg, error) {
+func (gc *GptClient) UnrollConversation(ctx context.Context, tenantId uuid.UUID, msgs []domain.Msg) (*domain.Msg, error) {
 	p := MAIN_DESCRIPTION + domain.CompileMessages(msgs)
 	req := openai.CompletionRequest{
 		Model:       openai.GPT3TextDavinci003,
@@ -42,7 +39,11 @@ func (gc *GptClient) UnrollConversation(ctx context.Context, msgs []domain.Msg) 
 		Temperature: 1,
 		MaxTokens:   512,
 	}
-	cli := openai.NewOrgClient(gc.Token, gc.Org)
+	tenant := gc.tenantRepository.GetFirst(ctx, ports.GetById(tenantId))
+	if tenant == nil {
+		return nil, errors.New(domain.TENANT_NOT_FOUND)
+	}
+	cli := openai.NewClient(tenant.AccountSettings.NlpToken)
 	res, err := cli.CreateCompletion(ctx, req)
 	if err != nil {
 		return nil, err
@@ -51,7 +52,6 @@ func (gc *GptClient) UnrollConversation(ctx context.Context, msgs []domain.Msg) 
 	txt = strings.ReplaceAll(txt, p, "")
 	txt = strings.ReplaceAll(txt, string(domain.APPLICATION), "")
 	txt = strings.ReplaceAll(txt, string(domain.USER), "")
-	txt = strings.ReplaceAll(txt, "#", "")
 	return &domain.Msg{
 		Role:    domain.APPLICATION,
 		Content: txt,

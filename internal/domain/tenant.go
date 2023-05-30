@@ -15,8 +15,9 @@ type (
 		AccountSettings AccountSettings
 	}
 	AccountSettings struct {
-		PhoneId string
-		Token   string
+		PhoneId  string
+		Token    string
+		NlpToken string
 	}
 	TenantUser struct {
 		Id        uuid.UUID

@@ -10,10 +10,6 @@
         "connectionString": "mongodb+srv://matraca:dDrzrx6r9WcHHGql@clusterdev.73cfdry.mongodb.net",
         "database": "pm2"
     },
-    "gpt": {
-        "token": "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",
-        "org": "org-u6eLnaNoOWYKrb8riZgCu6WX"
-    },
     "kafka": {
         "bootstrap-servers": "env-dev.tilid.com.br:9092",
         "username": "",

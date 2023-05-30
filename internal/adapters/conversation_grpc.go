@@ -3,6 +3,7 @@ package adapters
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"pm2/internal/adapters/gRPC"
 	"pm2/internal/domain"
@@ -14,17 +15,48 @@ import (
 type (
 	ConversationServer struct {
 		gRPC.UnimplementedConversationServiceServer
+
 		conversationRepository ports.Repository[domain.Conversation]
+		tenantUserRepository   ports.Repository[domain.TenantUser]
 		sessionManager         ports.SessionManagerUseCase
 	}
 )
 
 func NewConversationServer(conversationRepository ports.Repository[domain.Conversation],
+	tenantUserRepository ports.Repository[domain.TenantUser],
 	sessionManager ports.SessionManagerUseCase) gRPC.ConversationServiceServer {
 	return &ConversationServer{
 		conversationRepository: conversationRepository,
 		sessionManager:         sessionManager,
+		tenantUserRepository:   tenantUserRepository,
 	}
+}
+
+func (c *ConversationServer) TakeOverConversation(rq *gRPC.TakeConversation, rw gRPC.ConversationService_TakeOverConversationServer) error {
+	ctx := rw.Context()
+	tuid, err := uuid.Parse(rq.TenantUserId)
+	if err != nil {
+		return err
+	}
+	tuser := c.tenantUserRepository.GetFirst(ctx, ports.GetById(tuid))
+	if tuser == nil {
+		return errors.New(domain.TENANT_USER_NOT_FOUND)
+	}
+
+	cvid, err := uuid.Parse(rq.ConversationId)
+	if err != nil {
+		return err
+	}
+	cv := c.conversationRepository.GetFirst(ctx, ports.GetById(cvid))
+	if cv == nil {
+		return errors.New(domain.CONVERSATION_NOT_FOUND)
+	}
+	cv.TenantUser = tuser
+	c.conversationRepository.Replace(ctx, ports.GetById(cvid), cv)
+	<-ctx.Done()
+	cv.TenantUser = nil
+	c.conversationRepository.Replace(context.Background(), ports.GetById(cvid), cv)
+	return nil
 }
 
 func (c *ConversationServer) GetAllConversations(
@@ -55,7 +87,7 @@ func (c *ConversationServer) GetAllConversations(
 	c.sessionManager.CreateSession(s)
 	c.sessionManager.AppendSessionEvent(func(ss *ports.Session) bool {
 		return s.Id == ss.Id
-	}, func(ctx context.Context, i interface{}) (err error) {
+	}, func(_ context.Context, i interface{}) (err error) {
 		defer func() {
 			if e := recover(); e != nil {
 				err = e.(error)

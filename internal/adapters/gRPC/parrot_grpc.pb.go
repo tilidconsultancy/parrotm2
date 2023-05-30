@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConversationServiceClient interface {
 	GetAllConversations(ctx context.Context, in *ConversationRequest, opts ...grpc.CallOption) (ConversationService_GetAllConversationsClient, error)
+	TakeOverConversation(ctx context.Context, in *TakeConversation, opts ...grpc.CallOption) (ConversationService_TakeOverConversationClient, error)
 }
 
 type conversationServiceClient struct {
@@ -61,11 +62,44 @@ func (x *conversationServiceGetAllConversationsClient) Recv() (*ConversationResp
 	return m, nil
 }
 
+func (c *conversationServiceClient) TakeOverConversation(ctx context.Context, in *TakeConversation, opts ...grpc.CallOption) (ConversationService_TakeOverConversationClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ConversationService_ServiceDesc.Streams[1], "/parrot.proto.ConversationService/TakeOverConversation", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &conversationServiceTakeOverConversationClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type ConversationService_TakeOverConversationClient interface {
+	Recv() (*TakeConversation, error)
+	grpc.ClientStream
+}
+
+type conversationServiceTakeOverConversationClient struct {
+	grpc.ClientStream
+}
+
+func (x *conversationServiceTakeOverConversationClient) Recv() (*TakeConversation, error) {
+	m := new(TakeConversation)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // ConversationServiceServer is the server API for ConversationService service.
 // All implementations must embed UnimplementedConversationServiceServer
 // for forward compatibility
 type ConversationServiceServer interface {
 	GetAllConversations(*ConversationRequest, ConversationService_GetAllConversationsServer) error
+	TakeOverConversation(*TakeConversation, ConversationService_TakeOverConversationServer) error
 	mustEmbedUnimplementedConversationServiceServer()
 }
 
@@ -75,6 +109,9 @@ type UnimplementedConversationServiceServer struct {
 
 func (UnimplementedConversationServiceServer) GetAllConversations(*ConversationRequest, ConversationService_GetAllConversationsServer) error {
 	return status.Errorf(codes.Unimplemented, "method GetAllConversations not implemented")
+}
+func (UnimplementedConversationServiceServer) TakeOverConversation(*TakeConversation, ConversationService_TakeOverConversationServer) error {
+	return status.Errorf(codes.Unimplemented, "method TakeOverConversation not implemented")
 }
 func (UnimplementedConversationServiceServer) mustEmbedUnimplementedConversationServiceServer() {}
 
@@ -110,6 +147,27 @@ func (x *conversationServiceGetAllConversationsServer) Send(m *ConversationRespo
 	return x.ServerStream.SendMsg(m)
 }
 
+func _ConversationService_TakeOverConversation_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(TakeConversation)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ConversationServiceServer).TakeOverConversation(m, &conversationServiceTakeOverConversationServer{stream})
+}
+
+type ConversationService_TakeOverConversationServer interface {
+	Send(*TakeConversation) error
+	grpc.ServerStream
+}
+
+type conversationServiceTakeOverConversationServer struct {
+	grpc.ServerStream
+}
+
+func (x *conversationServiceTakeOverConversationServer) Send(m *TakeConversation) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // ConversationService_ServiceDesc is the grpc.ServiceDesc for ConversationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -123,6 +181,11 @@ var ConversationService_ServiceDesc = grpc.ServiceDesc{
 			Handler:       _ConversationService_GetAllConversations_Handler,
 			ServerStreams: true,
 		},
+		{
+			StreamName:    "TakeOverConversation",
+			Handler:       _ConversationService_TakeOverConversation_Handler,
+			ServerStreams: true,
+		},
 	},
 	Metadata: "proto/parrot.proto",
 }
@@ -132,6 +195,7 @@ var ConversationService_ServiceDesc = grpc.ServiceDesc{
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MessageServiceClient interface {
 	GetMessagesByConversationId(ctx context.Context, in *MessagesRequest, opts ...grpc.CallOption) (MessageService_GetMessagesByConversationIdClient, error)
+	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*Message, error)
 }
 
 type messageServiceClient struct {
@@ -174,11 +238,21 @@ func (x *messageServiceGetMessagesByConversationIdClient) Recv() (*MessagesRespo
 	return m, nil
 }
 
+func (c *messageServiceClient) SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*Message, error) {
+	out := new(Message)
+	err := c.cc.Invoke(ctx, "/parrot.proto.MessageService/SendMessage", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MessageServiceServer is the server API for MessageService service.
 // All implementations must embed UnimplementedMessageServiceServer
 // for forward compatibility
 type MessageServiceServer interface {
 	GetMessagesByConversationId(*MessagesRequest, MessageService_GetMessagesByConversationIdServer) error
+	SendMessage(context.Context, *SendMessageRequest) (*Message, error)
 	mustEmbedUnimplementedMessageServiceServer()
 }
 
@@ -188,6 +262,9 @@ type UnimplementedMessageServiceServer struct {
 
 func (UnimplementedMessageServiceServer) GetMessagesByConversationId(*MessagesRequest, MessageService_GetMessagesByConversationIdServer) error {
 	return status.Errorf(codes.Unimplemented, "method GetMessagesByConversationId not implemented")
+}
+func (UnimplementedMessageServiceServer) SendMessage(context.Context, *SendMessageRequest) (*Message, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendMessage not implemented")
 }
 func (UnimplementedMessageServiceServer) mustEmbedUnimplementedMessageServiceServer() {}
 
@@ -223,13 +300,36 @@ func (x *messageServiceGetMessagesByConversationIdServer) Send(m *MessagesRespon
 	return x.ServerStream.SendMsg(m)
 }
 
+func _MessageService_SendMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).SendMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/parrot.proto.MessageService/SendMessage",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).SendMessage(ctx, req.(*SendMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MessageService_ServiceDesc is the grpc.ServiceDesc for MessageService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var MessageService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "parrot.proto.MessageService",
 	HandlerType: (*MessageServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "SendMessage",
+			Handler:    _MessageService_SendMessage_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "GetMessagesByConversationId",
