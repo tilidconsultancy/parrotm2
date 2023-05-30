@@ -57,8 +57,10 @@ func (c *ConversationServer) TakeOverConversation(rq *gRPC.TakeConversation, rw 
 	for {
 		select {
 		case <-ctx.Done():
+			ctx := context.Background()
+			cv := c.conversationRepository.GetFirst(ctx, ports.GetById(cvid))
 			cv.TenantUser = nil
-			c.conversationRepository.Replace(context.Background(), ports.GetById(cvid), cv)
+			c.conversationRepository.Replace(ctx, ports.GetById(cvid), cv)
 			return nil
 		default:
 			rw.Send(rq)
