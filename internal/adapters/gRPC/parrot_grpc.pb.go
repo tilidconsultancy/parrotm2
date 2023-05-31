@@ -205,6 +205,7 @@ var ConversationService_ServiceDesc = grpc.ServiceDesc{
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MessageServiceClient interface {
 	GetMessagesByConversationId(ctx context.Context, in *MessagesRequest, opts ...grpc.CallOption) (MessageService_GetMessagesByConversationIdClient, error)
+	AssignConversationsMessages(ctx context.Context, in *AssinConversationsRequest, opts ...grpc.CallOption) (MessageService_AssignConversationsMessagesClient, error)
 	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*Message, error)
 }
 
@@ -248,6 +249,38 @@ func (x *messageServiceGetMessagesByConversationIdClient) Recv() (*MessagesRespo
 	return m, nil
 }
 
+func (c *messageServiceClient) AssignConversationsMessages(ctx context.Context, in *AssinConversationsRequest, opts ...grpc.CallOption) (MessageService_AssignConversationsMessagesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &MessageService_ServiceDesc.Streams[1], "/parrot.proto.MessageService/AssignConversationsMessages", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &messageServiceAssignConversationsMessagesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type MessageService_AssignConversationsMessagesClient interface {
+	Recv() (*Message, error)
+	grpc.ClientStream
+}
+
+type messageServiceAssignConversationsMessagesClient struct {
+	grpc.ClientStream
+}
+
+func (x *messageServiceAssignConversationsMessagesClient) Recv() (*Message, error) {
+	m := new(Message)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *messageServiceClient) SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*Message, error) {
 	out := new(Message)
 	err := c.cc.Invoke(ctx, "/parrot.proto.MessageService/SendMessage", in, out, opts...)
@@ -262,6 +295,7 @@ func (c *messageServiceClient) SendMessage(ctx context.Context, in *SendMessageR
 // for forward compatibility
 type MessageServiceServer interface {
 	GetMessagesByConversationId(*MessagesRequest, MessageService_GetMessagesByConversationIdServer) error
+	AssignConversationsMessages(*AssinConversationsRequest, MessageService_AssignConversationsMessagesServer) error
 	SendMessage(context.Context, *SendMessageRequest) (*Message, error)
 	mustEmbedUnimplementedMessageServiceServer()
 }
@@ -272,6 +306,9 @@ type UnimplementedMessageServiceServer struct {
 
 func (UnimplementedMessageServiceServer) GetMessagesByConversationId(*MessagesRequest, MessageService_GetMessagesByConversationIdServer) error {
 	return status.Errorf(codes.Unimplemented, "method GetMessagesByConversationId not implemented")
+}
+func (UnimplementedMessageServiceServer) AssignConversationsMessages(*AssinConversationsRequest, MessageService_AssignConversationsMessagesServer) error {
+	return status.Errorf(codes.Unimplemented, "method AssignConversationsMessages not implemented")
 }
 func (UnimplementedMessageServiceServer) SendMessage(context.Context, *SendMessageRequest) (*Message, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendMessage not implemented")
@@ -310,6 +347,27 @@ func (x *messageServiceGetMessagesByConversationIdServer) Send(m *MessagesRespon
 	return x.ServerStream.SendMsg(m)
 }
 
+func _MessageService_AssignConversationsMessages_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(AssinConversationsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(MessageServiceServer).AssignConversationsMessages(m, &messageServiceAssignConversationsMessagesServer{stream})
+}
+
+type MessageService_AssignConversationsMessagesServer interface {
+	Send(*Message) error
+	grpc.ServerStream
+}
+
+type messageServiceAssignConversationsMessagesServer struct {
+	grpc.ServerStream
+}
+
+func (x *messageServiceAssignConversationsMessagesServer) Send(m *Message) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 func _MessageService_SendMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SendMessageRequest)
 	if err := dec(in); err != nil {
@@ -344,6 +402,11 @@ var MessageService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "GetMessagesByConversationId",
 			Handler:       _MessageService_GetMessagesByConversationId_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "AssignConversationsMessages",
+			Handler:       _MessageService_AssignConversationsMessages_Handler,
 			ServerStreams: true,
 		},
 	},

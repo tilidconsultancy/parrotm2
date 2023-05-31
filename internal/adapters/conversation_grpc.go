@@ -92,8 +92,8 @@ func (c *ConversationServer) GetAllConversations(
 	j, _ = json.Marshal(cr)
 	log.Println(string(j))
 	s := &ports.Session{
-		Id:  uuid.New(),
-		Key: rq.TenantId,
+		Id:   uuid.New(),
+		Keys: []string{rq.TenantId},
 	}
 	c.sessionManager.CreateSession(s)
 	c.sessionManager.AppendSessionEvent(func(ss *ports.Session) bool {

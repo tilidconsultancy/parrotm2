@@ -17,7 +17,6 @@ import (
 
 func main() {
 	c := buildContainer()
-
 	if err := c.Invoke(func(v *viper.Viper,
 		cs gRPC.ConversationServiceServer,
 		ms gRPC.MessageServiceServer) {

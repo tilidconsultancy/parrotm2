@@ -7,6 +7,7 @@ import (
 	"log"
 	"pm2/internal/adapters/gRPC"
 	"pm2/internal/domain"
+	"pm2/internal/domain/events"
 	"pm2/internal/ports"
 
 	"github.com/google/uuid"
@@ -46,6 +47,30 @@ func recoverMessage(err *error) {
 	}
 }
 
+func (ms *MessageServer) AssignConversationsMessages(rq *gRPC.AssinConversationsRequest, rw gRPC.MessageService_AssignConversationsMessagesServer) error {
+	ctx := rw.Context()
+	s := &ports.Session{
+		Id:   uuid.New(),
+		Keys: rq.ConversationsId,
+	}
+	ms.sessionManager.CreateSession(s)
+	ms.sessionManager.AppendSessionEvent(func(ss *ports.Session) bool {
+		return ss.Id == s.Id
+	}, func(ctx context.Context, i interface{}) (err error) {
+		defer recoverMessage(&err)
+		evt := i.(*events.MessageEvent)
+		cv := ms.conversationRepository.GetFirst(ctx, ports.GetById(evt.ConversationId))
+		if cv == nil {
+			return errors.New(domain.CONVERSATION_NOT_FOUND)
+		}
+		rmsg := buildMessages(cv, *evt.Message)[0]
+		rw.Send(rmsg)
+		return nil
+	})
+	<-ctx.Done()
+	return nil
+}
+
 func (ms *MessageServer) SendMessage(ctx context.Context, rq *gRPC.SendMessageRequest) (*gRPC.Message, error) {
 	cvid, err := uuid.Parse(rq.ConversationId)
 	if err != nil {
@@ -64,7 +89,7 @@ func (ms *MessageServer) SendMessage(ctx context.Context, rq *gRPC.SendMessageRe
 	}
 	cv.Messages = append(cv.Messages, *msg)
 	ms.conversationRepository.Replace(ctx, ports.GetById(cv.Id), cv)
-	return buildMessages(*msg)[0], nil
+	return buildMessages(cv, *msg)[0], nil
 }
 
 func (ms *MessageServer) GetMessagesByConversationId(
@@ -78,18 +103,18 @@ func (ms *MessageServer) GetMessagesByConversationId(
 	if cv == nil {
 		return status.Error(codes.NotFound, domain.CONVERSATION_NOT_FOUND)
 	}
-	mr := buildMessageResponse(cv.Messages...)
+	mr := buildMessageResponse(cv, cv.Messages...)
 	s := &ports.Session{
-		Id:  uuid.New(),
-		Key: rq.ConversationId,
+		Id:   uuid.New(),
+		Keys: []string{rq.ConversationId},
 	}
 	ms.sessionManager.CreateSession(s)
 	ms.sessionManager.AppendSessionEvent(func(ss *ports.Session) bool {
 		return s.Id == ss.Id
 	}, func(_ context.Context, i interface{}) (err error) {
 		defer recoverMessage(&err)
-		msg := i.(*domain.Msg)
-		msgr := buildMessageResponse(*msg)
+		msg := i.(*events.MessageEvent)
+		msgr := buildMessageResponse(cv, *msg.Message)
 		rw.Send(msgr)
 		j, _ = json.Marshal(msgr)
 		log.Println(string(j))
@@ -105,22 +130,23 @@ func (ms *MessageServer) GetMessagesByConversationId(
 	return nil
 }
 
-func buildMessageResponse(msgs ...domain.Msg) *gRPC.MessagesResponse {
+func buildMessageResponse(cv *domain.Conversation, msgs ...domain.Msg) *gRPC.MessagesResponse {
 	return &gRPC.MessagesResponse{
-		Messages: buildMessages(msgs...),
+		Messages: buildMessages(cv, msgs...),
 	}
 }
 
-func buildMessages(msgs ...domain.Msg) []*gRPC.Message {
+func buildMessages(cv *domain.Conversation, msgs ...domain.Msg) []*gRPC.Message {
 	r := []*gRPC.Message{}
 	for _, m := range msgs {
 		r = append(r, &gRPC.Message{
-			Id:         m.Id,
-			Role:       string(m.Role),
-			Content:    m.Content,
-			Status:     string(m.Status),
-			TenantUser: buildTenantUser(m.TenantUser),
-			CreatedAt:  m.CreatedAt.String(),
+			Id:           m.Id,
+			Role:         string(m.Role),
+			Content:      m.Content,
+			Status:       string(m.Status),
+			Conversation: buildConversations(*cv)[0],
+			TenantUser:   buildTenantUser(m.TenantUser),
+			CreatedAt:    m.CreatedAt.String(),
 		})
 	}
 	return r

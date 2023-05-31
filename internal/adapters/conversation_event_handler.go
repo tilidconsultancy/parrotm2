@@ -3,21 +3,22 @@ package adapters
 import (
 	"context"
 	"log"
+	"os"
 	"pm2/internal/domain/events"
 	"pm2/internal/ports"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
 
 func NewConversationEventConsumer(v *viper.Viper,
 	kcm *kafka.ConfigMap) ports.Consumer[events.ConversationEvent] {
+	h, _ := os.Hostname()
 	return NewKafkaConsumer[events.ConversationEvent](kcm, &KafkaConsumerSettings{
 		Topic:             v.GetString("kafka.conversationEvent.topic"),
 		NumPartitions:     v.GetInt("kafka.conversationEvent.numpartitions"),
 		ReplicationFactor: v.GetInt("kafka.conversationEvent.replicationfactor"),
-		GroupId:           uuid.NewString(),
+		GroupId:           h,
 		AutoOffsetReset:   v.GetString("kafka.conversationEvent.auto-offset-reset"),
 		Retries:           5,
 	})
@@ -38,7 +39,12 @@ func ConversationEventHandler(sm ports.SessionManagerUseCase) ports.ConsumerFunc
 	return func(ctx context.Context, _ ports.ConsumerContext, cc2 events.ConversationEvent) {
 		log.Printf("[CONVERSATION-EVENT-CONSUMER] - consume new conversation event: %s", cc2.Conversation.Id)
 		if err := sm.InvokeSessionEvents(func(s *ports.Session) bool {
-			return s.Key == cc2.Conversation.Tenant.Id.String()
+			for _, k := range s.Keys {
+				if k == cc2.Conversation.Tenant.Id.String() {
+					return true
+				}
+			}
+			return false
 		}, ctx, cc2.Conversation); err != nil {
 			panic(err)
 		}

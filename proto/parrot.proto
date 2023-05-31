@@ -14,6 +14,8 @@ service ConversationService {
 service MessageService {
   rpc GetMessagesByConversationId(MessagesRequest)
       returns (stream MessagesResponse);
+  rpc AssignConversationsMessages(AssinConversationsRequest)
+      returns (stream Message);
   rpc SendMessage(SendMessageRequest)
       returns (Message);
 }
@@ -27,6 +29,10 @@ message SendMessageRequest {
   string ConversationId = 1;
   string TenantUserId = 2;
   string Content = 3;
+}
+
+message AssinConversationsRequest {
+  repeated string ConversationsId = 1;
 }
 
 message MessagesRequest {
@@ -44,8 +50,9 @@ message Message {
   string Role       = 2;
   string Content    = 3;
   string Status     = 4;
-  TennantUser TenantUser = 5;
-  string CreatedAt = 6;
+  Conversation Conversation = 5;
+  TennantUser TenantUser = 6;
+  string CreatedAt = 7;
 }
 
 message TennantUser {
