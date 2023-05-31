@@ -19,7 +19,8 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConversationServiceClient interface {
 	GetAllConversations(ctx context.Context, in *ConversationRequest, opts ...grpc.CallOption) (ConversationService_GetAllConversationsClient, error)
-	TakeOverConversation(ctx context.Context, in *TakeConversation, opts ...grpc.CallOption) (ConversationService_TakeOverConversationClient, error)
+	TakeOverConversation(ctx context.Context, in *ChangeConversation, opts ...grpc.CallOption) (*ChangeConversation, error)
+	GiveBackConversation(ctx context.Context, in *ChangeConversation, opts ...grpc.CallOption) (*ChangeConversation, error)
 }
 
 type conversationServiceClient struct {
@@ -62,36 +63,22 @@ func (x *conversationServiceGetAllConversationsClient) Recv() (*ConversationResp
 	return m, nil
 }
 
-func (c *conversationServiceClient) TakeOverConversation(ctx context.Context, in *TakeConversation, opts ...grpc.CallOption) (ConversationService_TakeOverConversationClient, error) {
-	stream, err := c.cc.NewStream(ctx, &ConversationService_ServiceDesc.Streams[1], "/parrot.proto.ConversationService/TakeOverConversation", opts...)
+func (c *conversationServiceClient) TakeOverConversation(ctx context.Context, in *ChangeConversation, opts ...grpc.CallOption) (*ChangeConversation, error) {
+	out := new(ChangeConversation)
+	err := c.cc.Invoke(ctx, "/parrot.proto.ConversationService/TakeOverConversation", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &conversationServiceTakeOverConversationClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
+	return out, nil
 }
 
-type ConversationService_TakeOverConversationClient interface {
-	Recv() (*TakeConversation, error)
-	grpc.ClientStream
-}
-
-type conversationServiceTakeOverConversationClient struct {
-	grpc.ClientStream
-}
-
-func (x *conversationServiceTakeOverConversationClient) Recv() (*TakeConversation, error) {
-	m := new(TakeConversation)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
+func (c *conversationServiceClient) GiveBackConversation(ctx context.Context, in *ChangeConversation, opts ...grpc.CallOption) (*ChangeConversation, error) {
+	out := new(ChangeConversation)
+	err := c.cc.Invoke(ctx, "/parrot.proto.ConversationService/GiveBackConversation", in, out, opts...)
+	if err != nil {
 		return nil, err
 	}
-	return m, nil
+	return out, nil
 }
 
 // ConversationServiceServer is the server API for ConversationService service.
@@ -99,7 +86,8 @@ func (x *conversationServiceTakeOverConversationClient) Recv() (*TakeConversatio
 // for forward compatibility
 type ConversationServiceServer interface {
 	GetAllConversations(*ConversationRequest, ConversationService_GetAllConversationsServer) error
-	TakeOverConversation(*TakeConversation, ConversationService_TakeOverConversationServer) error
+	TakeOverConversation(context.Context, *ChangeConversation) (*ChangeConversation, error)
+	GiveBackConversation(context.Context, *ChangeConversation) (*ChangeConversation, error)
 	mustEmbedUnimplementedConversationServiceServer()
 }
 
@@ -110,8 +98,11 @@ type UnimplementedConversationServiceServer struct {
 func (UnimplementedConversationServiceServer) GetAllConversations(*ConversationRequest, ConversationService_GetAllConversationsServer) error {
 	return status.Errorf(codes.Unimplemented, "method GetAllConversations not implemented")
 }
-func (UnimplementedConversationServiceServer) TakeOverConversation(*TakeConversation, ConversationService_TakeOverConversationServer) error {
-	return status.Errorf(codes.Unimplemented, "method TakeOverConversation not implemented")
+func (UnimplementedConversationServiceServer) TakeOverConversation(context.Context, *ChangeConversation) (*ChangeConversation, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TakeOverConversation not implemented")
+}
+func (UnimplementedConversationServiceServer) GiveBackConversation(context.Context, *ChangeConversation) (*ChangeConversation, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GiveBackConversation not implemented")
 }
 func (UnimplementedConversationServiceServer) mustEmbedUnimplementedConversationServiceServer() {}
 
@@ -147,25 +138,40 @@ func (x *conversationServiceGetAllConversationsServer) Send(m *ConversationRespo
 	return x.ServerStream.SendMsg(m)
 }
 
-func _ConversationService_TakeOverConversation_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(TakeConversation)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+func _ConversationService_TakeOverConversation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeConversation)
+	if err := dec(in); err != nil {
+		return nil, err
 	}
-	return srv.(ConversationServiceServer).TakeOverConversation(m, &conversationServiceTakeOverConversationServer{stream})
+	if interceptor == nil {
+		return srv.(ConversationServiceServer).TakeOverConversation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/parrot.proto.ConversationService/TakeOverConversation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConversationServiceServer).TakeOverConversation(ctx, req.(*ChangeConversation))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-type ConversationService_TakeOverConversationServer interface {
-	Send(*TakeConversation) error
-	grpc.ServerStream
-}
-
-type conversationServiceTakeOverConversationServer struct {
-	grpc.ServerStream
-}
-
-func (x *conversationServiceTakeOverConversationServer) Send(m *TakeConversation) error {
-	return x.ServerStream.SendMsg(m)
+func _ConversationService_GiveBackConversation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeConversation)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConversationServiceServer).GiveBackConversation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/parrot.proto.ConversationService/GiveBackConversation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConversationServiceServer).GiveBackConversation(ctx, req.(*ChangeConversation))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // ConversationService_ServiceDesc is the grpc.ServiceDesc for ConversationService service.
@@ -174,16 +180,20 @@ func (x *conversationServiceTakeOverConversationServer) Send(m *TakeConversation
 var ConversationService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "parrot.proto.ConversationService",
 	HandlerType: (*ConversationServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "TakeOverConversation",
+			Handler:    _ConversationService_TakeOverConversation_Handler,
+		},
+		{
+			MethodName: "GiveBackConversation",
+			Handler:    _ConversationService_GiveBackConversation_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "GetAllConversations",
 			Handler:       _ConversationService_GetAllConversations_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "TakeOverConversation",
-			Handler:       _ConversationService_TakeOverConversation_Handler,
 			ServerStreams: true,
 		},
 	},

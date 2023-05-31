@@ -5,8 +5,10 @@ package parrot.proto;
 service ConversationService {
   rpc GetAllConversations(ConversationRequest)
       returns (stream ConversationResponse);
-  rpc TakeOverConversation(TakeConversation)
-      returns (stream TakeConversation);
+  rpc TakeOverConversation(ChangeConversation)
+      returns (ChangeConversation);
+  rpc GiveBackConversation(ChangeConversation)
+      returns (ChangeConversation);
 }
 
 service MessageService {
@@ -16,7 +18,7 @@ service MessageService {
       returns (Message);
 }
 
-message TakeConversation {
+message ChangeConversation {
   string ConversationId = 1;
   string TenantUserId = 2;
 }

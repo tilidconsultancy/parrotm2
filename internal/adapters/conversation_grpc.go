@@ -8,7 +8,6 @@ import (
 	"pm2/internal/adapters/gRPC"
 	"pm2/internal/domain"
 	"pm2/internal/ports"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -33,40 +32,41 @@ func NewConversationServer(conversationRepository ports.Repository[domain.Conver
 	}
 }
 
-func (c *ConversationServer) TakeOverConversation(rq *gRPC.TakeConversation, rw gRPC.ConversationService_TakeOverConversationServer) error {
-	ctx := rw.Context()
+func (c *ConversationServer) GiveBackConversation(ctx context.Context, rq *gRPC.ChangeConversation) (*gRPC.ChangeConversation, error) {
+	cvid, err := uuid.Parse(rq.ConversationId)
+	if err != nil {
+		return nil, err
+	}
+	cv := c.conversationRepository.GetFirst(ctx, ports.GetById(cvid))
+	if cv == nil {
+		return nil, errors.New(domain.CONVERSATION_NOT_FOUND)
+	}
+	cv.TenantUser = nil
+	c.conversationRepository.Replace(ctx, ports.GetById(cvid), cv)
+	return rq, nil
+}
+
+func (c *ConversationServer) TakeOverConversation(ctx context.Context, rq *gRPC.ChangeConversation) (*gRPC.ChangeConversation, error) {
 	tuid, err := uuid.Parse(rq.TenantUserId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	tuser := c.tenantUserRepository.GetFirst(ctx, ports.GetById(tuid))
 	if tuser == nil {
-		return errors.New(domain.TENANT_USER_NOT_FOUND)
+		return nil, errors.New(domain.TENANT_USER_NOT_FOUND)
 	}
 
 	cvid, err := uuid.Parse(rq.ConversationId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	cv := c.conversationRepository.GetFirst(ctx, ports.GetById(cvid))
 	if cv == nil || cv.TenantUser != nil {
-		return errors.New(domain.CONVERSATION_NOT_FOUND)
+		return nil, errors.New(domain.CONVERSATION_NOT_FOUND)
 	}
 	cv.TenantUser = tuser
 	c.conversationRepository.Replace(ctx, ports.GetById(cvid), cv)
-	for {
-		select {
-		case <-ctx.Done():
-			ctx := context.Background()
-			cv := c.conversationRepository.GetFirst(ctx, ports.GetById(cvid))
-			cv.TenantUser = nil
-			c.conversationRepository.Replace(ctx, ports.GetById(cvid), cv)
-			return nil
-		default:
-			rw.Send(rq)
-			time.Sleep(time.Second * 2)
-		}
-	}
+	return rq, nil
 }
 
 func (c *ConversationServer) GetAllConversations(
