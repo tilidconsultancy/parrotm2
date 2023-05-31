@@ -10,6 +10,8 @@ import (
 	"pm2/internal/ports"
 
 	"github.com/google/uuid"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type (
@@ -51,14 +53,14 @@ func (ms *MessageServer) SendMessage(ctx context.Context, rq *gRPC.SendMessageRe
 	}
 	cv := ms.conversationRepository.GetFirst(ctx, ports.GetById(cvid))
 	if cv == nil {
-		return nil, errors.New(domain.CONVERSATION_NOT_FOUND)
+		return nil, status.Error(codes.NotFound, domain.CONVERSATION_NOT_FOUND)
 	}
 	if cv.TenantUser == nil {
-		return nil, errors.New(domain.TENANT_USER_NOT_FOUND)
+		return nil, status.Error(codes.NotFound, domain.TENANT_USER_NOT_FOUND)
 	}
 	msg, err := ms.conversationUseCase.SendApplicationMessage(ctx, cv, rq.Content)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Aborted, err.Error())
 	}
 	cv.Messages = append(cv.Messages, *msg)
 	ms.conversationRepository.Replace(ctx, ports.GetById(cv.Id), cv)
@@ -74,7 +76,7 @@ func (ms *MessageServer) GetMessagesByConversationId(
 	log.Println(string(j))
 	cv := ms.conversationRepository.GetFirst(ctx, ports.GetById(uuid.MustParse(rq.ConversationId)))
 	if cv == nil {
-		return errors.New(domain.CONVERSATION_NOT_FOUND)
+		return status.Error(codes.NotFound, domain.CONVERSATION_NOT_FOUND)
 	}
 	mr := buildMessageResponse(cv.Messages...)
 	s := &ports.Session{

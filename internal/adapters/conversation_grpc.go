@@ -3,13 +3,14 @@ package adapters
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"log"
 	"pm2/internal/adapters/gRPC"
 	"pm2/internal/domain"
 	"pm2/internal/ports"
 
 	"github.com/google/uuid"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type (
@@ -35,11 +36,11 @@ func NewConversationServer(conversationRepository ports.Repository[domain.Conver
 func (c *ConversationServer) GiveBackConversation(ctx context.Context, rq *gRPC.ChangeConversation) (*gRPC.ChangeConversation, error) {
 	cvid, err := uuid.Parse(rq.ConversationId)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Aborted, err.Error())
 	}
 	cv := c.conversationRepository.GetFirst(ctx, ports.GetById(cvid))
 	if cv == nil {
-		return nil, errors.New(domain.CONVERSATION_NOT_FOUND)
+		return nil, status.Error(codes.NotFound, domain.CONVERSATION_NOT_FOUND)
 	}
 	cv.TenantUser = nil
 	c.conversationRepository.Replace(ctx, ports.GetById(cvid), cv)
@@ -53,16 +54,16 @@ func (c *ConversationServer) TakeOverConversation(ctx context.Context, rq *gRPC.
 	}
 	tuser := c.tenantUserRepository.GetFirst(ctx, ports.GetById(tuid))
 	if tuser == nil {
-		return nil, errors.New(domain.TENANT_USER_NOT_FOUND)
+		return nil, status.Error(codes.NotFound, domain.CONVERSATION_NOT_FOUND)
 	}
 
 	cvid, err := uuid.Parse(rq.ConversationId)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Aborted, err.Error())
 	}
 	cv := c.conversationRepository.GetFirst(ctx, ports.GetById(cvid))
 	if cv == nil || cv.TenantUser != nil {
-		return nil, errors.New(domain.CONVERSATION_NOT_FOUND)
+		return nil, status.Error(codes.NotFound, domain.CONVERSATION_NOT_FOUND)
 	}
 	cv.TenantUser = tuser
 	c.conversationRepository.Replace(ctx, ports.GetById(cvid), cv)
