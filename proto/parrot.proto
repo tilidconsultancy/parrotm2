@@ -30,7 +30,7 @@ message SendMessageRequest {
 }
 
 message MessagesRequest {
-  string ConversationId = 1;
+  repeated string ConversationIds = 1;
   string IniDate = 2;
   string EndDate = 3;
 }

@@ -2,9 +2,7 @@ package adapters
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"log"
 	"pm2/internal/adapters/gRPC"
 	"pm2/internal/domain"
 	"pm2/internal/ports"
@@ -72,16 +70,22 @@ func (ms *MessageServer) GetMessagesByConversationId(
 	rw gRPC.MessageService_GetMessagesByConversationIdServer) (err error) {
 	defer recoverMessage(&err)
 	ctx := rw.Context()
-	j, _ := json.Marshal(rq)
-	log.Println(string(j))
-	cv := ms.conversationRepository.GetFirst(ctx, ports.GetById(uuid.MustParse(rq.ConversationId)))
+	ids := []uuid.UUID{}
+	for _, v := range rq.ConversationIds {
+		id, err := uuid.Parse(v)
+		if err != nil {
+			return status.Error(codes.Aborted, err.Error())
+		}
+		ids = append(ids, id)
+	}
+	cv := ms.conversationRepository.GetFirst(ctx, ports.GetByIds(ids))
 	if cv == nil {
 		return status.Error(codes.NotFound, domain.CONVERSATION_NOT_FOUND)
 	}
 	mr := buildMessageResponse(cv.Messages...)
 	s := &ports.Session{
-		Id:  uuid.New(),
-		Key: rq.ConversationId,
+		Id:   uuid.New(),
+		Keys: rq.ConversationIds,
 	}
 	ms.sessionManager.CreateSession(s)
 	ms.sessionManager.AppendSessionEvent(func(ss *ports.Session) bool {
@@ -91,16 +95,12 @@ func (ms *MessageServer) GetMessagesByConversationId(
 		msg := i.(*domain.Msg)
 		msgr := buildMessageResponse(*msg)
 		rw.Send(msgr)
-		j, _ = json.Marshal(msgr)
-		log.Println(string(j))
 		return nil
 	})
 	defer ms.sessionManager.RemoveSessions(func(ss *ports.Session) bool {
 		return ss.Id == s.Id
 	})
 	rw.Send(mr)
-	j, _ = json.Marshal(mr)
-	log.Println(string(j))
 	<-ctx.Done()
 	return nil
 }

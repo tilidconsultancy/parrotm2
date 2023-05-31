@@ -8,6 +8,14 @@ func GetById(id uuid.UUID) map[string]interface{} {
 	}
 }
 
+func GetByIds(ids []uuid.UUID) map[string]interface{} {
+	return map[string]interface{}{
+		"id": map[string]interface{}{
+			"$in": ids,
+		},
+	}
+}
+
 func GetTenantByPhoneId(pid string) map[string]interface{} {
 	return map[string]interface{}{
 		"accountsettings.phoneid": pid,
