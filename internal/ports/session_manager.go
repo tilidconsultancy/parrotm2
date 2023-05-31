@@ -9,7 +9,7 @@ import (
 type (
 	Session struct {
 		Id   uuid.UUID
-		Keys []string
+		Key  string
 		Data map[string]string
 	}
 	PredicateSessionFunc  func(*Session) bool

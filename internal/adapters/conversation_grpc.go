@@ -92,14 +92,18 @@ func (c *ConversationServer) GetAllConversations(
 	j, _ = json.Marshal(cr)
 	log.Println(string(j))
 	s := &ports.Session{
-		Id:   uuid.New(),
-		Keys: []string{rq.TenantId},
+		Id:  uuid.New(),
+		Key: rq.TenantId,
 	}
 	c.sessionManager.CreateSession(s)
 	c.sessionManager.AppendSessionEvent(func(ss *ports.Session) bool {
 		return s.Id == ss.Id
 	}, func(_ context.Context, i interface{}) (err error) {
-		defer recoverMessage(&err)
+		defer func() {
+			if e := recover(); e != nil {
+				err = e.(error)
+			}
+		}()
 		cv := i.(*domain.Conversation)
 		cr := &gRPC.ConversationResponse{
 			Conversations: buildConversations(*cv),

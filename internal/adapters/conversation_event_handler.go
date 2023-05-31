@@ -8,7 +8,6 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/uuid"
-	"github.com/ledongthuc/goterators"
 	"github.com/spf13/viper"
 )
 
@@ -39,10 +38,7 @@ func ConversationEventHandler(sm ports.SessionManagerUseCase) ports.ConsumerFunc
 	return func(ctx context.Context, _ ports.ConsumerContext, cc2 events.ConversationEvent) {
 		log.Printf("[CONVERSATION-EVENT-CONSUMER] - consume new conversation event: %s", cc2.Conversation.Id)
 		if err := sm.InvokeSessionEvents(func(s *ports.Session) bool {
-			_, _, err := goterators.Find(s.Keys, func(item string) bool {
-				return item == cc2.Conversation.Tenant.Id.String()
-			})
-			return err == nil
+			return s.Key == cc2.Conversation.Tenant.Id.String()
 		}, ctx, cc2.Conversation); err != nil {
 			panic(err)
 		}
