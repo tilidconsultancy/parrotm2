@@ -62,7 +62,7 @@ func (ms *MessageServer) SendMessage(ctx context.Context, rq *gRPC.SendMessageRe
 	}
 	cv.Messages = append(cv.Messages, *msg)
 	ms.conversationRepository.Replace(ctx, ports.GetById(cv.Id), cv)
-	return buildMessages(cv.Id, *msg)[0], nil
+	return buildMessages(*msg)[0], nil
 }
 
 func (ms *MessageServer) GetMessagesByConversationId(
@@ -82,7 +82,7 @@ func (ms *MessageServer) GetMessagesByConversationId(
 	if cv == nil {
 		return status.Error(codes.NotFound, domain.CONVERSATION_NOT_FOUND)
 	}
-	mr := buildMessageResponse(cv.Id, cv.Messages...)
+	mr := buildMessageResponse(cv.Messages...)
 	s := &ports.Session{
 		Id:   uuid.New(),
 		Keys: rq.ConversationIds,
@@ -93,7 +93,7 @@ func (ms *MessageServer) GetMessagesByConversationId(
 	}, func(_ context.Context, i interface{}) (err error) {
 		defer recoverMessage(&err)
 		msg := i.(*domain.Msg)
-		msgr := buildMessageResponse(cv.Id, *msg)
+		msgr := buildMessageResponse(*msg)
 		rw.Send(msgr)
 		return nil
 	})
@@ -105,23 +105,22 @@ func (ms *MessageServer) GetMessagesByConversationId(
 	return nil
 }
 
-func buildMessageResponse(cvid uuid.UUID, msgs ...domain.Msg) *gRPC.MessagesResponse {
+func buildMessageResponse(msgs ...domain.Msg) *gRPC.MessagesResponse {
 	return &gRPC.MessagesResponse{
-		Messages: buildMessages(cvid, msgs...),
+		Messages: buildMessages(msgs...),
 	}
 }
 
-func buildMessages(cvid uuid.UUID, msgs ...domain.Msg) []*gRPC.Message {
+func buildMessages(msgs ...domain.Msg) []*gRPC.Message {
 	r := []*gRPC.Message{}
 	for _, m := range msgs {
 		r = append(r, &gRPC.Message{
-			Id:             m.Id,
-			Role:           string(m.Role),
-			Content:        m.Content,
-			Status:         string(m.Status),
-			ConversationId: cvid.String(),
-			TenantUser:     buildTenantUser(m.TenantUser),
-			CreatedAt:      m.CreatedAt.String(),
+			Id:         m.Id,
+			Role:       string(m.Role),
+			Content:    m.Content,
+			Status:     string(m.Status),
+			TenantUser: buildTenantUser(m.TenantUser),
+			CreatedAt:  m.CreatedAt.String(),
 		})
 	}
 	return r

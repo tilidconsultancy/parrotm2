@@ -44,9 +44,8 @@ message Message {
   string Role       = 2;
   string Content    = 3;
   string Status     = 4;
-  string ConversationId = 5;
-  TennantUser TenantUser = 6;
-  string CreatedAt = 7;
+  TennantUser TenantUser = 5;
+  string CreatedAt = 6;
 }
 
 message TennantUser {
