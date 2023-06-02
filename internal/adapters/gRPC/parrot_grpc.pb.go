@@ -265,7 +265,7 @@ func (c *messageServiceClient) AssignConversationsMessages(ctx context.Context, 
 }
 
 type MessageService_AssignConversationsMessagesClient interface {
-	Recv() (*Message, error)
+	Recv() (*MessagesResponse, error)
 	grpc.ClientStream
 }
 
@@ -273,8 +273,8 @@ type messageServiceAssignConversationsMessagesClient struct {
 	grpc.ClientStream
 }
 
-func (x *messageServiceAssignConversationsMessagesClient) Recv() (*Message, error) {
-	m := new(Message)
+func (x *messageServiceAssignConversationsMessagesClient) Recv() (*MessagesResponse, error) {
+	m := new(MessagesResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -356,7 +356,7 @@ func _MessageService_AssignConversationsMessages_Handler(srv interface{}, stream
 }
 
 type MessageService_AssignConversationsMessagesServer interface {
-	Send(*Message) error
+	Send(*MessagesResponse) error
 	grpc.ServerStream
 }
 
@@ -364,7 +364,7 @@ type messageServiceAssignConversationsMessagesServer struct {
 	grpc.ServerStream
 }
 
-func (x *messageServiceAssignConversationsMessagesServer) Send(m *Message) error {
+func (x *messageServiceAssignConversationsMessagesServer) Send(m *MessagesResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 

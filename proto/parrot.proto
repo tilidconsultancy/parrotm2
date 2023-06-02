@@ -15,7 +15,7 @@ service MessageService {
   rpc GetMessagesByConversationId(MessagesRequest)
       returns (stream MessagesResponse);
   rpc AssignConversationsMessages(AssinConversationsRequest)
-      returns (stream Message);
+      returns (stream MessagesResponse);
   rpc SendMessage(SendMessageRequest)
       returns (Message);
 }

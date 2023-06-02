@@ -49,6 +49,23 @@ func recoverMessage(err *error) {
 
 func (ms *MessageServer) AssignConversationsMessages(rq *gRPC.AssinConversationsRequest, rw gRPC.MessageService_AssignConversationsMessagesServer) error {
 	ctx := rw.Context()
+	cids := []uuid.UUID{}
+	for _, scvid := range rq.ConversationsId {
+		cid, err := uuid.Parse(scvid)
+		if err != nil {
+			return status.Error(codes.Aborted, err.Error())
+		}
+		cids = append(cids, cid)
+	}
+	cvs := ms.conversationRepository.GetAll(ctx, ports.GetByIds(cids))
+	msgs := []*gRPC.Message{}
+	for _, cv := range cvs {
+		m := buildMessages(&cv, cv.Messages[len(cv.Messages)-1])[0]
+		msgs = append(msgs, m)
+	}
+	rw.Send(&gRPC.MessagesResponse{
+		Messages: msgs,
+	})
 	s := &ports.Session{
 		Id:   uuid.New(),
 		Keys: rq.ConversationsId,
@@ -63,7 +80,7 @@ func (ms *MessageServer) AssignConversationsMessages(rq *gRPC.AssinConversations
 		if cv == nil {
 			return errors.New(domain.CONVERSATION_NOT_FOUND)
 		}
-		rmsg := buildMessages(cv, *evt.Message)[0]
+		rmsg := buildMessageResponse(cv, *evt.Message)
 		rw.Send(rmsg)
 		return nil
 	})

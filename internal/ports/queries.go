@@ -2,6 +2,14 @@ package ports
 
 import "github.com/google/uuid"
 
+func GetByIds(ids []uuid.UUID) map[string]interface{} {
+	return map[string]interface{}{
+		"id": map[string]interface{}{
+			"$in": ids,
+		},
+	}
+}
+
 func GetById(id uuid.UUID) map[string]interface{} {
 	return map[string]interface{}{
 		"id": id,
