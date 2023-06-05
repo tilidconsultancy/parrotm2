@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
+	"os"
 	"pm2/internal/adapters/gRPC"
 	"pm2/internal/domain"
 	"pm2/internal/domain/events"
@@ -45,6 +47,38 @@ func recoverMessage(err *error) {
 			*err = errors.New("i really don't know")
 		}
 	}
+}
+
+func (ms *MessageServer) ReceiveChunkedAudio(rq *gRPC.AudioChunkRequest, rw gRPC.MessageService_ReceiveChunkedAudioServer) error {
+	ctx := rw.Context()
+	file, err := os.Open("audio.mp3")
+	if err != nil {
+		return status.Error(codes.Aborted, err.Error())
+	}
+	defer file.Close()
+	buff := make([]byte, rq.BufferSize)
+	os.Remove("audio2.mp3")
+	f, err := os.Create("audio2.mp3")
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	for n, err := file.Read(buff); err != io.EOF; n, err = file.Read(buff) {
+		select {
+		case <-ctx.Done():
+			return status.Error(codes.Aborted, "request cancelled")
+		default:
+			if err != nil {
+				return status.Error(codes.Aborted, err.Error())
+			}
+			rw.Send(&gRPC.AudioChunkResponse{
+				Buffer: buff,
+				GCount: uint32(n),
+			})
+			f.Write(buff)
+		}
+	}
+	return nil
 }
 
 func (ms *MessageServer) AssignConversationsMessages(rq *gRPC.AssinConversationsRequest, rw gRPC.MessageService_AssignConversationsMessagesServer) error {

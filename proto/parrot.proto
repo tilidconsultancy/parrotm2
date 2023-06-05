@@ -18,6 +18,17 @@ service MessageService {
       returns (stream MessagesResponse);
   rpc SendMessage(SendMessageRequest)
       returns (Message);
+  rpc ReceiveChunkedAudio(AudioChunkRequest)
+      returns (stream AudioChunkResponse); 
+}
+
+message AudioChunkRequest {
+  uint32 BufferSize = 1;
+}
+
+message AudioChunkResponse {
+  bytes Buffer = 2;
+  uint32 GCount = 3;
 }
 
 message ChangeConversation {
