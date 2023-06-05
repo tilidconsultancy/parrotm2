@@ -51,18 +51,15 @@ func recoverMessage(err *error) {
 
 func (ms *MessageServer) ReceiveChunkedAudio(rq *gRPC.AudioChunkRequest, rw gRPC.MessageService_ReceiveChunkedAudioServer) error {
 	ctx := rw.Context()
-	file, err := os.Open("audio.mp3")
+	file, err := os.Open("../configs/audio.mp3")
 	if err != nil {
 		return status.Error(codes.Aborted, err.Error())
 	}
 	defer file.Close()
 	buff := make([]byte, rq.BufferSize)
-	os.Remove("audio2.mp3")
-	f, err := os.Create("audio2.mp3")
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 	for n, err := file.Read(buff); err != io.EOF; n, err = file.Read(buff) {
 		select {
 		case <-ctx.Done():
@@ -75,7 +72,6 @@ func (ms *MessageServer) ReceiveChunkedAudio(rq *gRPC.AudioChunkRequest, rw gRPC
 				Buffer: buff,
 				GCount: uint32(n),
 			})
-			f.Write(buff)
 		}
 	}
 	return nil
