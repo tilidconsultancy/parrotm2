@@ -11,7 +11,6 @@ import (
 	"pm2/internal/domain"
 	"pm2/internal/domain/events"
 	"pm2/internal/ports"
-	"time"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -73,7 +72,6 @@ func (ms *MessageServer) ReceiveChunkedAudio(rq *gRPC.AudioChunkRequest, rw gRPC
 				Buffer: buff,
 				GCount: uint32(n),
 			})
-			time.Sleep(time.Second)
 		}
 	}
 	return nil
