@@ -11,6 +11,16 @@ services:
       - "8082:8081"
     networks:
       - dft
+  chatty:
+    build:
+      context: ../chatty
+      dockerfile: ../chatty/Dockerfile
+    image: chatty
+    container_name: chatty
+    ports:
+      - "643:643"
+    networks:
+      - dft
   envoy:
     build:
       context: .

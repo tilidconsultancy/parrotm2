@@ -1,7 +1,7 @@
 {
     "grpcport": ":9090",
     "ginport": ":8081",
-    "chattyaddr": "0.0.0.0:50052",
+    "chattyaddr": "chatty:643",
     "meta": {
         "host": "https://graph.facebook.com",
         "timeout": 10,
