@@ -3,9 +3,7 @@ package adapters
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
-	"os"
 	"pm2/internal/adapters/gRPC"
 	"pm2/internal/domain"
 
@@ -44,9 +42,6 @@ func (c *ChattyClient) TextToSpeech(ctx context.Context, txt string, t *domain.T
 		return nil, err
 	}
 	buff := &bytes.Buffer{}
-	os.Remove("a.ogg")
-	f, _ := os.Create("a.ogg")
-	defer f.Close()
 	for err != io.EOF {
 		abuff, err := s.Recv()
 		if err == io.EOF {
@@ -55,9 +50,9 @@ func (c *ChattyClient) TextToSpeech(ctx context.Context, txt string, t *domain.T
 		if err != nil {
 			return nil, err
 		}
-		g, _ := f.Write(abuff.Chunk)
-		buff.Write(abuff.Chunk)
-		fmt.Println(g)
+		if _, err := buff.Write(abuff.Chunk); err != nil {
+			return nil, err
+		}
 	}
 	return buff, nil
 }
