@@ -2,8 +2,8 @@ version: '3'
 services:
   pm2:
     build:
-      context: .
-      dockerfile: ./Dockerfile
+      context: ./parrotm2
+      dockerfile: ./parrotm2/Dockerfile
     image: pm2
     container_name: pm2
     ports:
@@ -13,8 +13,8 @@ services:
       - dft
   chatty:
     build:
-      context: ../chatty
-      dockerfile: ../chatty/Dockerfile
+      context: ./chatty
+      dockerfile: ./chatty/Dockerfile
     image: chatty
     container_name: chatty
     ports:
@@ -23,8 +23,8 @@ services:
       - dft
   envoy:
     build:
-      context: .
-      dockerfile: ./envoy/Dockerfile
+      context: ./parrotm2
+      dockerfile: ./parrotm2/envoy/Dockerfile
     image: pm2/envoy
     container_name: pm2_envoy
     ports:
