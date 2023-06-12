@@ -1,0 +1,44 @@
+syntax = "proto3";
+option go_package = "internal/adapters/gRPC";
+package chatty.proto;
+
+service SpeechServiceStream {
+    rpc TextToSpeech (TextToSpeechRequest) returns (stream AudioBuffer);
+    rpc SpeechToText (stream SpeechToTextRequest) returns (stream SpeechToTextResponse);
+}
+
+enum AudioFormat {
+    MP3 = 0;
+    OGG_OPUS = 1;
+    FLAC = 2;
+    ALAW = 3;
+    MULAW = 4;
+    AMRNB = 5;
+    AMRWB = 6;
+    ANY = 7;
+}
+
+message TextToSpeechRequest {
+    string voice = 1;
+    string content = 2;
+    AudioFormat outputFormat = 3;
+}
+
+message AudioBuffer {
+    bytes chunk = 1;
+    int32 size = 2;
+}
+
+message SpeechToTextRequest {
+    oneof payload {
+        AudioFormat inputFormat = 1;
+        AudioBuffer chunkData = 2;
+    }
+}
+
+message SpeechToTextResponse {
+    oneof payload {
+        string content = 1;
+        int32 size = 2;
+    }
+}

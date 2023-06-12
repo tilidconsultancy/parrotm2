@@ -10,7 +10,7 @@ func GetByIds(ids []uuid.UUID) map[string]interface{} {
 	}
 }
 
-func GetById(id uuid.UUID) map[string]interface{} {
+func GetById(id interface{}) map[string]interface{} {
 	return map[string]interface{}{
 		"id": id,
 	}

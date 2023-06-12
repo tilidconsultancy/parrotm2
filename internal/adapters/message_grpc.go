@@ -56,10 +56,10 @@ func (ms *MessageServer) ReceiveChunkedAudio(rq *gRPC.AudioChunkRequest, rw gRPC
 		return status.Error(codes.Aborted, err.Error())
 	}
 	defer file.Close()
-	buff := make([]byte, rq.BufferSize)
 	if err != nil {
 		return err
 	}
+	buff := make([]byte, rq.BufferSize)
 	for n, err := file.Read(buff); err != io.EOF; n, err = file.Read(buff) {
 		select {
 		case <-ctx.Done():

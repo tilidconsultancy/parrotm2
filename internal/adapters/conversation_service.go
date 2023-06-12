@@ -1,8 +1,10 @@
 package adapters
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"math/rand"
 	"pm2/internal/domain"
 	"pm2/internal/domain/events"
 	"pm2/internal/ports"
@@ -21,6 +23,7 @@ type (
 		metaClient             ports.MetaClient
 		conversationProducer   ports.Producer[events.ConversationEvent]
 		messageProducer        ports.Producer[events.MessageEvent]
+		chattyClient           *ChattyClient
 	}
 )
 
@@ -29,7 +32,8 @@ func NewConversationService(gptClient ports.NlpClient,
 	tenantRepository ports.Repository[domain.Tenant],
 	metaClient ports.MetaClient,
 	conversationProducer ports.Producer[events.ConversationEvent],
-	messageProducer ports.Producer[events.MessageEvent]) ports.ConversationUseCase {
+	messageProducer ports.Producer[events.MessageEvent],
+	chattyClient *ChattyClient) ports.ConversationUseCase {
 	return &ConversationService{
 		gptClient:              gptClient,
 		conversationRepository: conversationRepository,
@@ -37,6 +41,7 @@ func NewConversationService(gptClient ports.NlpClient,
 		metaClient:             metaClient,
 		conversationProducer:   conversationProducer,
 		messageProducer:        messageProducer,
+		chattyClient:           chattyClient,
 	}
 }
 
@@ -72,13 +77,24 @@ func (cs *ConversationService) genconversation(ctx context.Context,
 			domain.ERROR,
 			nil)
 	}
+	s := rand.Intn(100)
+	if s <= cv.Tenant.AccountSettings.RateVoice {
+		r, err := cs.chattyClient.TextToSpeech(ctx, nmsg.Content, &cv.Tenant)
+		if err != nil {
+			return nil, err
+		}
+		mid, err := cs.metaClient.UploadMedia(ctx, &cv.Tenant, r)
+		if err != nil {
+			return nil, err
+		}
+		nmsg.Id, err = cs.metaClient.SendAudioMessage(ctx, &cv.Tenant, m.From, mid)
+		if err != nil {
+			return nil, err
+		}
+		return nmsg, nil
+	}
 	nmsg.Id, err = cs.metaClient.SendTextMessage(ctx, &cv.Tenant, m.From, nmsg.Content)
 	if err != nil {
-		return nil, err
-	}
-	if err := cs.messageProducer.Publish(cv.Id, events.NewMessageEvent(cv.Id,
-		cv.Id,
-		nmsg)); err != nil {
 		return nil, err
 	}
 	return nmsg, nil
@@ -107,6 +123,18 @@ func (cs *ConversationService) UnrollConversation(ctx context.Context, msg *boun
 		return &cv.Messages[fmi+1], nil
 	}
 	go cs.metaClient.ReadMessage(ctx, &cv.Tenant, m.Id)
+	if m.Type == "audio" {
+		s, err := cs.metaClient.GetAudio(ctx, &cv.Tenant, m.Audio.Id)
+
+		if err != nil {
+			return nil, err
+		}
+		txt, err := cs.chattyClient.SpeechToText(ctx, bytes.NewReader(s))
+		if err != nil {
+			return nil, err
+		}
+		m.Text.Body = txt
+	}
 	unmsg := domain.NewMessage(
 		m.Id,
 		domain.USER,
@@ -125,6 +153,11 @@ func (cs *ConversationService) UnrollConversation(ctx context.Context, msg *boun
 			return nil, err
 		}
 		msgs = append(msgs, *nmsg)
+		if err := cs.messageProducer.Publish(cv.Id, events.NewMessageEvent(cv.Id,
+			cv.Id,
+			nmsg)); err != nil {
+			return nil, err
+		}
 	}
 	cv.Messages = msgs
 	cv.UpdatedAt = time.Now()

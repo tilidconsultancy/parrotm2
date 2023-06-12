@@ -8,9 +8,11 @@ import (
 
 type (
 	AccountSettings struct {
-		PhoneId  string
-		Token    string
-		NlpToken string
+		PhoneId   string
+		Token     string
+		NlpToken  string
+		Voice     string
+		RateVoice int
 	}
 	Tenant struct {
 		Id              uuid.UUID

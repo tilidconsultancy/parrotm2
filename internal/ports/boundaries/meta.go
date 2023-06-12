@@ -14,6 +14,14 @@ type (
 			Body       string `json:"body"`
 		} `json:"text"`
 	}
+	SendAudioMessageInput struct {
+		MessageProduct string `json:"messaging_product"`
+		To             string `json:"to"`
+		Type           string `json:"type"`
+		Audio          struct {
+			Id string `json:"id"`
+		} `json:"audio"`
+	}
 	SentMessageOutput struct {
 		MessageProduct string `json:"messaging_product"`
 		Messages       []struct {
@@ -57,7 +65,22 @@ type (
 		Text      struct {
 			Body string `json:"body"`
 		} `json:"text"`
-		Type string `json:"type"`
+		Type  string `json:"type"`
+		Audio struct {
+			MimeType string `json:"mime_type"`
+			Sha256   string `json:"sha256"`
+			Id       string `json:"id"`
+			Voice    bool   `json:"voice"`
+		} `json:"audio"`
+	}
+
+	Media struct {
+		URL              string `json:"url"`
+		MimeType         string `json:"mime_type"`
+		Sha256           string `json:"sha256"`
+		FileSize         int    `json:"file_size"`
+		ID               string `json:"id"`
+		MessagingProduct string `json:"messaging_product"`
 	}
 )
 
@@ -80,6 +103,19 @@ func NewSendTextMessageRequest(to string, b string) *SendTextMessageInput {
 		}{
 			PreviewUrl: false,
 			Body:       b,
+		},
+	}
+}
+
+func NewSendAudioMessageRequest(to string, id string) *SendAudioMessageInput {
+	return &SendAudioMessageInput{
+		MessageProduct: WPP,
+		To:             to,
+		Type:           "audio",
+		Audio: struct {
+			Id string "json:\"id\""
+		}{
+			Id: id,
 		},
 	}
 }

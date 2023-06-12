@@ -8,7 +8,8 @@
             "args": [
                 "--go_out=.",
                 "--go-grpc_out=.",
-                "./proto/parrot.proto"
+                "./proto/parrot.proto",
+                "./proto/chatty.proto"
             ],
             "problemMatcher": "$msCompile"
         },

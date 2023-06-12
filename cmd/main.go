@@ -65,6 +65,7 @@ func buildContainer() *dig.Container {
 	c.Provide(adapters.NewMongoDbRepository[domain.Conversation])
 	c.Provide(adapters.NewMongoDbRepository[domain.Tenant])
 	c.Provide(adapters.NewMongoDbRepository[domain.TenantUser])
+	c.Provide(adapters.NewMongoDbRepository[domain.IncomingMessage])
 	c.Provide(adapters.NewGptClient)
 	c.Provide(adapters.NewMetaSettings)
 	c.Provide(adapters.NewMetaHttpClient)
@@ -79,6 +80,10 @@ func buildContainer() *dig.Container {
 	c.Provide(adapters.NewConversationEventProducer)
 	c.Provide(adapters.NewMessageEventConsumer)
 	c.Provide(adapters.NewMessageEventProducer)
+
+	c.Provide(adapters.NewgRPCConnection)
+	c.Provide(gRPC.NewSpeechServiceStreamClient)
+	c.Provide(adapters.NewChattyClient)
 
 	return c
 }
