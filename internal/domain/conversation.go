@@ -17,6 +17,9 @@ const (
 	SYSTEM      MsgRole = "[SYSTEM]"
 	APPLICATION MsgRole = "[APPLICATION]"
 
+	TEXT  MsgKind = "text"
+	AUDIO MsgKind = "audio"
+
 	ERROR     MsgStatus = "error"
 	SENT      MsgStatus = "sent"
 	GENERATED MsgStatus = "generated"
@@ -37,22 +40,27 @@ type (
 		UpdatedAt  time.Time
 	}
 	MsgStatus string
+	MsgKind   string
 	Msg       struct {
 		Id         string
 		Role       MsgRole
 		Content    string
+		Kind       MsgKind
+		MediaId    string
 		Status     MsgStatus
 		TenantUser *TenantUser
 		CreatedAt  time.Time
 	}
 )
 
-func NewMessage(id string, role MsgRole, c string, st MsgStatus, tu *TenantUser) *Msg {
+func NewMessage(id string, role MsgRole, c string, st MsgStatus, k MsgKind, mid string, tu *TenantUser) *Msg {
 	return &Msg{
 		Id:         id,
 		Role:       role,
 		Content:    c,
 		Status:     st,
+		Kind:       k,
+		MediaId:    mid,
 		TenantUser: tu,
 		CreatedAt:  time.Now(),
 	}

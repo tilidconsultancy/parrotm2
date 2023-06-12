@@ -1,12 +1,12 @@
 package adapters
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"log"
-	"os"
 	"pm2/internal/adapters/gRPC"
 	"pm2/internal/domain"
 	"pm2/internal/domain/events"
@@ -21,18 +21,24 @@ type (
 	MessageServer struct {
 		gRPC.UnimplementedMessageServiceServer
 		conversationRepository ports.Repository[domain.Conversation]
+		tenantRepository       ports.Repository[domain.Tenant]
 		sessionManager         ports.SessionManagerUseCase
 		conversationUseCase    ports.ConversationUseCase
+		metaClient             ports.MetaClient
 	}
 )
 
 func NewMessageServer(conversationRepository ports.Repository[domain.Conversation],
 	sessionManager ports.SessionManagerUseCase,
-	conversationUseCase ports.ConversationUseCase) gRPC.MessageServiceServer {
+	conversationUseCase ports.ConversationUseCase,
+	metaClient ports.MetaClient,
+	tenantRepository ports.Repository[domain.Tenant]) gRPC.MessageServiceServer {
 	return &MessageServer{
 		conversationRepository: conversationRepository,
 		sessionManager:         sessionManager,
 		conversationUseCase:    conversationUseCase,
+		metaClient:             metaClient,
+		tenantRepository:       tenantRepository,
 	}
 }
 
@@ -51,11 +57,16 @@ func recoverMessage(err *error) {
 
 func (ms *MessageServer) ReceiveChunkedAudio(rq *gRPC.AudioChunkRequest, rw gRPC.MessageService_ReceiveChunkedAudioServer) error {
 	ctx := rw.Context()
-	file, err := os.Open("../configs/audio.mp3")
+	tid, err := uuid.Parse(rq.TenantId)
 	if err != nil {
 		return status.Error(codes.Aborted, err.Error())
 	}
-	defer file.Close()
+	t := ms.tenantRepository.GetFirst(ctx, ports.GetById(tid))
+	bts, err := ms.metaClient.GetAudio(ctx, t, rq.MediaId)
+	if err != nil {
+		return status.Error(codes.Aborted, err.Error())
+	}
+	file := bytes.NewReader(bts)
 	if err != nil {
 		return err
 	}
@@ -191,6 +202,8 @@ func buildMessages(cv *domain.Conversation, msgs ...domain.Msg) []*gRPC.Message 
 			Role:         string(m.Role),
 			Content:      m.Content,
 			Status:       string(m.Status),
+			Kind:         string(m.Kind),
+			MediaId:      m.MediaId,
 			Conversation: buildConversations(*cv)[0],
 			TenantUser:   buildTenantUser(m.TenantUser),
 			CreatedAt:    m.CreatedAt.String(),

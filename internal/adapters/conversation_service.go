@@ -55,6 +55,8 @@ func (cs *ConversationService) SendApplicationMessage(ctx context.Context, cv *d
 		domain.APPLICATION,
 		content,
 		domain.SENT,
+		domain.TEXT,
+		"",
 		cv.TenantUser)
 	if err := cs.messageProducer.Publish(cv.Id, events.NewMessageEvent(cv.Id,
 		cv.Id,
@@ -75,6 +77,8 @@ func (cs *ConversationService) genconversation(ctx context.Context,
 			domain.APPLICATION,
 			err.Error(),
 			domain.ERROR,
+			domain.TEXT,
+			"",
 			nil)
 	}
 	s := rand.Intn(100)
@@ -87,6 +91,9 @@ func (cs *ConversationService) genconversation(ctx context.Context,
 		if err != nil {
 			return nil, err
 		}
+		nmsg.Kind = domain.AUDIO
+		nmsg.MediaId = mid
+
 		nmsg.Id, err = cs.metaClient.SendAudioMessage(ctx, &cv.Tenant, m.From, mid)
 		if err != nil {
 			return nil, err
@@ -123,6 +130,8 @@ func (cs *ConversationService) UnrollConversation(ctx context.Context, msg *boun
 		return &cv.Messages[fmi+1], nil
 	}
 	go cs.metaClient.ReadMessage(ctx, &cv.Tenant, m.Id)
+	var mk domain.MsgKind = domain.TEXT
+	var mid string = ""
 	if m.Type == "audio" {
 		s, err := cs.metaClient.GetAudio(ctx, &cv.Tenant, m.Audio.Id)
 
@@ -134,12 +143,18 @@ func (cs *ConversationService) UnrollConversation(ctx context.Context, msg *boun
 			return nil, err
 		}
 		m.Text.Body = txt
+
+		mk = domain.AUDIO
+		mid = m.Audio.Id
 	}
+
 	unmsg := domain.NewMessage(
 		m.Id,
 		domain.USER,
 		m.Text.Body,
 		domain.RECEIVED,
+		mk,
+		mid,
 		nil)
 	if err := cs.messageProducer.Publish(cv.Id, events.NewMessageEvent(cv.Id,
 		cv.Id, unmsg)); err != nil {

@@ -57,5 +57,7 @@ func (gc *GptClient) UnrollConversation(ctx context.Context, tenantId uuid.UUID,
 		domain.APPLICATION,
 		txt,
 		domain.GENERATED,
+		domain.TEXT,
+		"",
 		nil), nil
 }
