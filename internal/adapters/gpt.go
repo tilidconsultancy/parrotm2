@@ -3,6 +3,7 @@ package adapters
 import (
 	"context"
 	"errors"
+	"fmt"
 	"pm2/internal/domain"
 	"pm2/internal/ports"
 	"strings"
@@ -12,9 +13,7 @@ import (
 )
 
 const (
-	MAIN_DESCRIPTION = `Seu nome é Bob, um chatbot da empresa Europ Assistance Brasil, que realiza atendimentos para contratação de seguros viagem servindo de apoio para o e-comerce: 'https://eaviagem.com.br'.
-
-	Considere "SEMPRE" essa LEGENDA para gerar seus textos!
+	MAIN_DESCRIPTION = `Considere "SEMPRE" essa LEGENDA para gerar seus textos!
 	#[USER] Indica que o texto a seguir vem do usuario final da aplicacao.
 	#[APPLICATION] Indica que o texto é uma resposta ja gerada por voce, gere seus textos "SEMPRE" com esse prefixo: #[APPLICATION]`
 )
@@ -32,16 +31,20 @@ func NewGptClient(tenantRepository ports.Repository[domain.Tenant]) ports.NlpCli
 }
 
 func (gc *GptClient) UnrollConversation(ctx context.Context, tenantId uuid.UUID, msgs []domain.Msg) (*domain.Msg, error) {
-	p := MAIN_DESCRIPTION + domain.CompileMessages(msgs)
+	tenant := gc.tenantRepository.GetFirst(ctx, ports.GetById(tenantId))
+	if tenant == nil {
+		return nil, errors.New(domain.TENANT_NOT_FOUND)
+	}
+	p := fmt.Sprintf("%s\n%s\n%s\n",
+		tenant.AccountSettings.MainContext,
+		MAIN_DESCRIPTION,
+		domain.CompileMessages(msgs))
+
 	req := openai.CompletionRequest{
 		Model:       openai.GPT3TextDavinci003,
 		Prompt:      p,
 		Temperature: 1,
 		MaxTokens:   512,
-	}
-	tenant := gc.tenantRepository.GetFirst(ctx, ports.GetById(tenantId))
-	if tenant == nil {
-		return nil, errors.New(domain.TENANT_NOT_FOUND)
 	}
 	cli := openai.NewClient(tenant.AccountSettings.NlpToken)
 	res, err := cli.CreateCompletion(ctx, req)
@@ -53,6 +56,7 @@ func (gc *GptClient) UnrollConversation(ctx context.Context, tenantId uuid.UUID,
 	txt = strings.ReplaceAll(txt, string(domain.APPLICATION), "")
 	txt = strings.ReplaceAll(txt, string(domain.USER), "")
 	txt = strings.ReplaceAll(txt, "#", "")
+	txt = strings.ReplaceAll(txt, "\n", "")
 	return domain.NewMessage("",
 		domain.APPLICATION,
 		txt,
