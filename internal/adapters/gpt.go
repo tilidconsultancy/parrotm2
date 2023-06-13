@@ -8,7 +8,6 @@ import (
 	"pm2/internal/ports"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -20,18 +19,14 @@ const (
 
 type (
 	GptClient struct {
-		tenantRepository ports.Repository[domain.Tenant]
 	}
 )
 
 func NewGptClient(tenantRepository ports.Repository[domain.Tenant]) ports.NlpClient {
-	return &GptClient{
-		tenantRepository: tenantRepository,
-	}
+	return &GptClient{}
 }
 
-func (gc *GptClient) UnrollConversation(ctx context.Context, tenantId uuid.UUID, msgs []domain.Msg) (*domain.Msg, error) {
-	tenant := gc.tenantRepository.GetFirst(ctx, ports.GetById(tenantId))
+func (gc *GptClient) UnrollConversation(ctx context.Context, tenant *domain.Tenant, msgs []domain.Msg) (*domain.Msg, error) {
 	if tenant == nil {
 		return nil, errors.New(domain.TENANT_NOT_FOUND)
 	}

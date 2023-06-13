@@ -70,7 +70,7 @@ func (cs *ConversationService) genconversation(ctx context.Context,
 	cv *domain.Conversation,
 	m *boundaries.Message,
 	msgs []domain.Msg) (*domain.Msg, error) {
-	nmsg, err := cs.gptClient.UnrollConversation(ctx, cv.Tenant.Id, msgs)
+	nmsg, err := cs.gptClient.UnrollConversation(ctx, &cv.Tenant, msgs)
 	if err != nil {
 		nmsg = domain.NewMessage(
 			uuid.NewString(),
