@@ -30,14 +30,16 @@ type (
 	ConversationStatus string
 	MsgRole            string
 	Conversation       struct {
-		Id         uuid.UUID
-		Tenant     Tenant
-		TenantUser *TenantUser
-		User       User
-		Messages   []Msg
-		Status     ConversationStatus
-		CreatedAt  time.Time
-		UpdatedAt  time.Time
+		Id                         uuid.UUID
+		Tenant                     Tenant
+		TenantUser                 *TenantUser
+		User                       User
+		Messages                   []Msg
+		Status                     ConversationStatus
+		CurrentConversationLabel   *PercentageLabelMeaning
+		ConversationLabelSnapshots [][]PercentageLabelMeaning
+		CreatedAt                  time.Time
+		UpdatedAt                  time.Time
 	}
 	MsgStatus string
 	MsgKind   string
@@ -89,5 +91,18 @@ func CompileMessages(msgs []Msg) string {
 			_ int,
 			_ []Msg) string {
 			return previousValue + "#" + string(currentValue.Role) + currentValue.Content + "\n"
+		})
+}
+
+func CompileMessagesByRole(msgs []Msg, r MsgRole) string {
+	fmsgs := goterators.Filter(msgs, func(item Msg) bool {
+		return item.Role == r
+	})
+	return goterators.Reduce[Msg, string](fmsgs, "",
+		func(previousValue string,
+			currentValue Msg,
+			_ int,
+			_ []Msg) string {
+			return previousValue + currentValue.Content + "\n"
 		})
 }

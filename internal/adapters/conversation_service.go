@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ledongthuc/goterators"
+	"golang.org/x/exp/slices"
 )
 
 type (
@@ -24,6 +25,7 @@ type (
 		conversationProducer   ports.Producer[events.ConversationEvent]
 		messageProducer        ports.Producer[events.MessageEvent]
 		chattyClient           *ChattyClient
+		labelMeaningUseCase    ports.LabelMeaningUseCase
 	}
 )
 
@@ -33,7 +35,8 @@ func NewConversationService(gptClient ports.NlpClient,
 	metaClient ports.MetaClient,
 	conversationProducer ports.Producer[events.ConversationEvent],
 	messageProducer ports.Producer[events.MessageEvent],
-	chattyClient *ChattyClient) ports.ConversationUseCase {
+	chattyClient *ChattyClient,
+	labelMeaningUseCase ports.LabelMeaningUseCase) ports.ConversationUseCase {
 	return &ConversationService{
 		gptClient:              gptClient,
 		conversationRepository: conversationRepository,
@@ -42,6 +45,7 @@ func NewConversationService(gptClient ports.NlpClient,
 		conversationProducer:   conversationProducer,
 		messageProducer:        messageProducer,
 		chattyClient:           chattyClient,
+		labelMeaningUseCase:    labelMeaningUseCase,
 	}
 }
 
@@ -176,6 +180,16 @@ func (cs *ConversationService) UnrollConversation(ctx context.Context, msg *boun
 	}
 	cv.Messages = msgs
 	cv.UpdatedAt = time.Now()
+	cs.conversationRepository.Replace(ctx, ports.GetById(cv.Id), cv)
+	lm, err := cs.labelMeaningUseCase.GetPercentageMeaningsByMessages(ctx, &cv.Tenant, cv.Messages)
+	if err != nil {
+		return nil, err
+	}
+	cv.ConversationLabelSnapshots = append(cv.ConversationLabelSnapshots, lm)
+	slices.SortFunc[domain.PercentageLabelMeaning](lm, func(a, b domain.PercentageLabelMeaning) bool {
+		return a.Percentage > b.Percentage
+	})
+	cv.CurrentConversationLabel = &lm[0]
 	cs.conversationRepository.Replace(ctx, ports.GetById(cv.Id), cv)
 	return nmsg, nil
 }
