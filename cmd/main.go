@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"os"
 	"pm2/internal/adapters"
 	"pm2/internal/adapters/gRPC"
 	"pm2/internal/domain"
@@ -95,6 +96,9 @@ func initializeViper() *viper.Viper {
 	v.AddConfigPath("../configs")
 	v.SetConfigType("json")
 	v.SetConfigName("local")
+	if env := os.Getenv("env"); env != "" {
+		v.SetConfigName(env)
+	}
 	if err := v.ReadInConfig(); err != nil {
 		panic(err)
 	}

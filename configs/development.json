@@ -1,0 +1,32 @@
+{
+    "grpcport": ":643",
+    "ginport": ":80",
+    "chattyaddr": "chatty.chatty:643",
+    "meta": {
+        "host": "https://graph.facebook.com",
+        "timeout": 10,
+        "retries": 5
+    },
+    "mongodb": {
+        "connectionString": "mongodb+srv://matraca:dDrzrx6r9WcHHGql@clusterdev.73cfdry.mongodb.net",
+        "database": "pm2"
+    },
+    "kafka": {
+        "bootstrap-servers": "env-dev.tilid.com.br:9092",
+        "username": "",
+        "password": "",
+        "mechanism": "PLAIN",
+        "conversationEvent": {
+            "topic": "parrot.conversation-event",
+            "auto-offset-reset": "latest",
+            "numpartitions": 1,
+            "replicationfactor": 1
+        },
+        "messageEvent": {
+            "topic": "parrot.message-event",
+            "auto-offset-reset": "latest",
+            "numpartitions": 1,
+            "replicationfactor": 1
+        }
+    }
+}
